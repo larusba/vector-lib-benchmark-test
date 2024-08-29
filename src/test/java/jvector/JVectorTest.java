@@ -23,6 +23,7 @@ import io.github.jbellis.jvector.vector.VectorSimilarityFunction;
 import io.github.jbellis.jvector.vector.VectorUtil;
 import io.github.jbellis.jvector.vector.types.ByteSequence;
 import io.github.jbellis.jvector.vector.types.VectorFloat;
+import jvector.util.Hdf5Loader;
 import jvector.util.MMapReader;
 import jvector.util.SiftLoader;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -48,6 +51,20 @@ import static java.lang.Math.min;
 public class JVectorTest {
 
     @Test
+    void testJVectorHdf5() throws IOException {
+        var dataset = Hdf5Loader.load("glove-25-angular.hdf5");
+
+//        var baseVectors = SiftLoader.readFvecs(String.format("%s/siftsmall_base.fvecs", siftPath));
+//        var queryVectors = SiftLoader.readFvecs(String.format("%s/siftsmall_query.fvecs", siftPath));
+//        var groundTruth = SiftLoader.readIvecs(String.format("%s/siftsmall_groundtruth.ivecs", siftPath));
+//        System.out.format("%d base and %d query vectors loaded, dimensions %d%n",
+//                baseVectors.size(), queryVectors.size(), baseVectors.get(0).length());
+//
+//        siftInMemory((ArrayList<VectorFloat<?>>) dataset.baseVectors);
+        siftDiskAnn(dataset.baseVectors, dataset.queryVectors, (List<Set<Integer>>) dataset.groundTruth);
+    }
+
+    @Test
     void testJVectorSiftSmall() throws IOException {
         var siftPath = "siftsmall";
         var baseVectors = SiftLoader.readFvecs(String.format("%s/siftsmall_base.fvecs", siftPath));
@@ -57,10 +74,11 @@ public class JVectorTest {
                 baseVectors.size(), queryVectors.size(), baseVectors.get(0).length());
 
         siftInMemory(baseVectors);
-        siftDiskAnn(baseVectors, queryVectors, groundTruth);
+//        siftDiskAnn(baseVectors, queryVectors, groundTruth);
     }
 
     public static void siftInMemory(ArrayList<VectorFloat<?>> baseVectors) throws IOException {
+        Instant start = Instant.now();
         // infer the dimensionality from the first vector
         int originalDimension = baseVectors.get(0).length();
         // wrap the raw vectors in a RandomAccessVectorValues
@@ -90,10 +108,14 @@ public class JVectorTest {
                 System.out.println(ns);
             }
         }
+        Instant finish = Instant.now();
+        long timeElapsed = Duration.between(start, finish).toMillis();
+        System.out.println("In-memory test elapsed = " + timeElapsed + "ms");
     }
 
     // diskann-style index with PQ
     public static void siftDiskAnn(List<VectorFloat<?>> baseVectors, List<VectorFloat<?>> queryVectors, List<Set<Integer>> groundTruth) throws IOException {
+        Instant start = Instant.now();
         int originalDimension = baseVectors.get(0).length();
         RandomAccessVectorValues ravv = new ListRandomAccessVectorValues(baseVectors, originalDimension);
 
@@ -133,6 +155,9 @@ public class JVectorTest {
             // measure our recall against the (exactly computed) ground truth
             testRecall(index, queryVectors, groundTruth, sspFactory);
         }
+        Instant finish = Instant.now();
+        long timeElapsed = Duration.between(start, finish).toMillis();
+        System.out.println("DiskANN test elapsed = " + timeElapsed + "ms");
     }
 
     private static void testRecall(GraphIndex graph,

@@ -12,7 +12,45 @@ Product quantization results will be saved into `pq_cache` folder.
 Before running the test, enable the Vector API using
 `--add-modules jdk.incubator.vector`
 
-Here the result for glove-25-angular.hdf5 dataset 10k
+Dataset: `glove-25-angular.hdf5 dataset 10k`
+
+Results for in-memory index:
+
+```shell
+10000 base and 100 query vectors loaded, dimensions 128
+NodeScore(4332, 3.8895223E-6)
+NodeScore(5980, 3.885593E-6)
+NodeScore(1642, 3.8852027E-6)
+NodeScore(4331, 3.8844655E-6)
+NodeScore(2126, 3.884412E-6)
+NodeScore(7971, 3.883863E-6)
+NodeScore(2208, 3.8819226E-6)
+NodeScore(3334, 3.8816834E-6)
+NodeScore(5286, 3.881449E-6)
+NodeScore(7260, 3.881371E-6)
+In-memory test elapsed = 488ms
+```
+
+Results for DiskANN indexing with Product Quantisation (PQ):
+```shell
+[main] INFO io.jhdf.HdfFile - jHDF version: 0.8.2
+[main] INFO io.jhdf.HdfFile - Opening HDF5 file '/Users/marco/IdeaProjects/vector-lib-performance-test/hdf5/glove-25-angular.hdf5'...
+[main] INFO io.jhdf.HdfFile - Opened HDF5 file '/Users/marco/IdeaProjects/vector-lib-performance-test/hdf5/glove-25-angular.hdf5'
+[main] INFO io.jhdf.GroupImpl - Lazy loading children of '//'
+[main] INFO io.jhdf.dataset.DatasetBase - Getting data for '/train'...
+[main] INFO io.jhdf.dataset.DatasetBase - Finished getting data for [/train] took [373ms]
+[main] INFO io.jhdf.dataset.DatasetBase - Getting data for '/test'...
+[main] INFO io.jhdf.dataset.DatasetBase - Finished getting data for [/test] took [12ms]
+[main] INFO io.jhdf.dataset.DatasetBase - Getting data for '/neighbors'...
+[main] INFO io.jhdf.dataset.DatasetBase - Finished getting data for [/neighbors] took [14ms]
+[main] INFO io.jhdf.HdfFile - Closed HDF file '/Users/marco/IdeaProjects/vector-lib-performance-test/hdf5/glove-25-angular.hdf5'
+
+glove-25-angular.hdf5: 1183514 base and 10000 query vectors created, dimensions 25
+(OnDiskGraphIndex) Recall: 0.7074
+DiskANN test elapsed = 82230ms
+```
+
+Here the result for Bench glove-25-angular.hdf5 dataset 10k
 
 ```shell
 Heap space available is 4831838208
