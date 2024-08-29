@@ -79,7 +79,7 @@ public class HnswGraphTest {
         Collections.shuffle(vectorData);
 
         // Print the test dataset
-        System.out.println("Test vectors:");
+//        System.out.println("Test vectors:");
 //        for (int i = 0; i < vectorData.size(); i++) {
 //            vectorData.get(i).print(i);
 //        }
