@@ -105,6 +105,7 @@ public class HnswGraphTest {
 
     @Test
     public void testSearchViaHnswGraph() throws IOException {
+        Instant start = Instant.now();
         // Build the graph manually and run the query
         HnswGraphBuilder builder = new HnswGraphBuilder(vectors, similarityFunction, maxConn, beamWidth, seed);
 
@@ -133,6 +134,11 @@ public class HnswGraphTest {
             Vector2D vec = vectors.get(id);
 //            vec.print(id);
         }
+
+        // CODE HERE
+        Instant finish = Instant.now();
+        long timeElapsed = Duration.between(start, finish).toMillis();
+        System.out.println("Elapsed time = " + timeElapsed + "ms");
     }
 
     private void readAndQuery(MMapDirectory dir, VectorProvider vectorData, int indexedDoc) throws IOException {

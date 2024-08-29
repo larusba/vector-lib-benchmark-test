@@ -83,6 +83,8 @@ public class LuceneHnswGraphTest {
 
     @Test
     public void testWriteAndQueryIndex() throws IOException {
+        Instant start = Instant.now();
+        // CODE HERE
         // Persist and read the data
         try (MMapDirectory dir = new MMapDirectory(indexPath)) {
 
@@ -92,10 +94,14 @@ public class LuceneHnswGraphTest {
             // Read index
             readAndQuery(dir, customVectorProvider, indexedDoc);
         }
+        Instant finish = Instant.now();
+        long timeElapsed = Duration.between(start, finish).toMillis();
+        System.out.println("Total execution time = " + timeElapsed + "ms");
     }
 
     @Test
     public void testSearchViaHnswGraph() throws IOException {
+        Instant start = Instant.now();
         // Build the graph manually and run the query
         HnswGraphBuilder builder = new HnswGraphBuilder(customVectorProvider, similarityFunction, maxConn, beamWidth, seed);
 
@@ -129,6 +135,9 @@ public class LuceneHnswGraphTest {
 //            vec.print(id);
             customVectorProvider.print(id);
         }
+        Instant finish = Instant.now();
+        long timeElapsed = Duration.between(start, finish).toMillis();
+        System.out.println("testSearchViaHnswGraph elapsed time = " + timeElapsed + "ms");
     }
 
     private void readAndQuery(MMapDirectory dir, CustomVectorProvider vectorData, int indexedDoc) throws IOException {
@@ -164,7 +173,7 @@ public class LuceneHnswGraphTest {
         }
         Instant finish = Instant.now();
         long timeElapsed = Duration.between(start, finish).toMillis();
-        System.out.println("Time elapsed = " + timeElapsed + "ms");
+        System.out.println("Read and Query elapsed time = " + timeElapsed + "ms");
     }
 
     private float[] getQuery() {
@@ -176,6 +185,7 @@ public class LuceneHnswGraphTest {
     }
 
     private int writeIndex(MMapDirectory dir, CustomVectorProvider vectorProvider) throws IOException {
+        Instant start = Instant.now();
         int indexedDoc = 0;
         IndexWriterConfig iwc = new IndexWriterConfig()
                 .setCodec(
@@ -200,6 +210,9 @@ public class LuceneHnswGraphTest {
                 indexedDoc++;
             }
         }
+        Instant finish = Instant.now();
+        long timeElapsed = Duration.between(start, finish).toMillis();
+        System.out.println("writeIndex elapsed time = " + timeElapsed + "ms");
         return indexedDoc;
     }
 
