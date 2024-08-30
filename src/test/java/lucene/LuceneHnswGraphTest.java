@@ -27,72 +27,94 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.lucene.util.hnsw.HnswGraphBuilder;
 import org.apache.lucene.util.hnsw.NeighborQueue;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import utils.CustomVectorProvider;
+import utils.MonitoringTask;
+import utils.TestUtil;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.SplittableRandom;
+import java.util.Timer;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static utils.TestUtil.CsvUtil.AVG_RAM;
+import static utils.TestUtil.CsvUtil.CPU_LOAD;
+import static utils.TestUtil.CsvUtil.DATASET_SIZE_KEY;
+import static utils.TestUtil.CsvUtil.ELAPSED_TIME;
+import static utils.TestUtil.CsvUtil.FILE_SIZE_KEY;
+import static utils.TestUtil.CsvUtil.QUEUE_SIZE;
+import static utils.TestUtil.CsvUtil.SINGLE_VECTOR_SIZE_KEY;
+import static utils.TestUtil.CsvUtil.TOPK_KEY;
+import static utils.TestUtil.DATASET_FOLDER;
+import static utils.TestUtil.OP_CPU_LOAD;
+import static utils.TestUtil.OP_RAM_USAGE;
+import static utils.TestUtil.deleteAllTempFiles;
+import static utils.TestUtil.getFileSizeInMB;
+import static utils.TestUtil.readStat;
+import static utils.TestUtil.trackTimeElapsed;
+import static utils.TestUtil.writeCSV;
 
 // https://github.com/apache/lucene/blob/fc67d6aa6e2bf2ec8ff4b2b8e4a763f3f706de29/lucene/core/src/test/org/apache/lucene/util/hnsw/KnnGraphTester.java
 
 public class LuceneHnswGraphTest {
 
-    //    public static final int dim = 2;
-    public static final int dim = 100;
-    public static float[] query = new float[] { 0.98f, 0.01f };
+    private static final int dim = 100;
+    public static final String FILENAME = "glove-100-angular.hdf5";
+//    public static final String FILENAME = "glove-25-angular.hdf5";
+    private static float[] query = getQuery();
+    private static final int TOPK = 10;
 
-    // The goal vector will be inserted into the graph which is very close to the actual query vector.
-    public static final Vector2D goalVector = new Vector2D(query[0] - 0.01f, query[1] + 0.01f);
-    public static final Path indexPath = Paths.get("target/index");
-    public static final VectorSimilarityFunction similarityFunction = VectorSimilarityFunction.EUCLIDEAN;
-    public static final int maxConn = 14;
-    public static final int beamWidth = 5;
-    public static final long seed = HnswGraphBuilder.randSeed;
+    private static final Path indexPath = Paths.get("index-lucene-tre");
+//    private static final Path indexPath = Paths.get("index-kevin/idx");
+    private static final VectorSimilarityFunction similarityFunction = VectorSimilarityFunction.EUCLIDEAN;
+    private static final int maxConn = 14;
+    private static final int beamWidth = 5;
+    private static final long seed = HnswGraphBuilder.randSeed;
 
     private static VectorProvider vectors;
     private static CustomVectorProvider customVectorProvider;
 
-    @BeforeAll
-    public static void setupIndexDir() throws IOException, URISyntaxException {
+    private List<String[]> stats = new ArrayList<>();
+    private Map<String, String> csvData = new HashMap<>();
+
+    @BeforeEach
+    public void setupIndexDir() throws IOException {
         File file = indexPath.toFile();
         if (file.exists()) {
             FileUtils.deleteDirectory(file);
         }
-
-        // Prepare the test data (10 entries)
-        float[][] dataset = readDataset();
-
-        // TODO: aggiungere array in prima posizione
-        // public static final Vector2D goalVector = new Vector2D(query[0] - 0.01f, query[1] + 0.01f);
-
-        customVectorProvider = new CustomVectorProvider(dataset);
+        customVectorProvider = initDataset(FILENAME, csvData);
+        stats.add(new String[] { DATASET_SIZE_KEY, SINGLE_VECTOR_SIZE_KEY, FILE_SIZE_KEY, CPU_LOAD, AVG_RAM, TOPK_KEY, QUEUE_SIZE, ELAPSED_TIME });
     }
 
     @Test
     public void testWriteAndQueryIndex() throws IOException {
         Instant start = Instant.now();
-        // CODE HERE
         // Persist and read the data
         try (MMapDirectory dir = new MMapDirectory(indexPath)) {
 
             // Write index
             int indexedDoc = writeIndex(dir, customVectorProvider);
 
+            System.out.println("indexedDoc = " + indexedDoc);
+
             // Read index
-            readAndQuery(dir, customVectorProvider, indexedDoc);
+//            readAndQuery(dir, customVectorProvider, indexedDoc);
         }
         Instant finish = Instant.now();
         long timeElapsed = Duration.between(start, finish).toMillis();
@@ -100,25 +122,87 @@ public class LuceneHnswGraphTest {
     }
 
     @Test
-    public void testSearchViaHnswGraph() throws IOException {
+    public void testSearchViaHnswGraph() throws IOException, InterruptedException {
+        new Timer().scheduleAtFixedRate(new MonitoringTask(), 0, 300);
+
         Instant start = Instant.now();
         // Build the graph manually and run the query
         HnswGraphBuilder builder = new HnswGraphBuilder(customVectorProvider, similarityFunction, maxConn, beamWidth, seed);
 
         HnswGraph hnsw = builder.build(customVectorProvider.randomAccess());
 
-        query = getQuery();
+        int queueSize = 5;
+
         // Run a search
         NeighborQueue nn = HnswGraph.search(
                 query,
-                10, // search result size
-                5,
+                TOPK, // search result size
+                queueSize,
                 customVectorProvider.randomAccess(), // ? Why do I need to specify the graph values again?
                 similarityFunction, // ? Why can I specify a different similarityFunction for search. Should that not be the same that was used for graph creation?
                 hnsw,
                 null,
                 new SplittableRandom(RandomUtils.nextLong())); // Random seed to entry vector of the search
 
+        // Print the results
+        printResults(nn, customVectorProvider, query);
+
+        Instant finish = Instant.now();
+        long timeElapsed = Duration.between(start, finish).toMillis();
+        System.out.println("testSearchViaHnswGraph elapsed time = " + timeElapsed + "ms");
+
+        // Write CSV
+        String cpuload = String.valueOf(readStat(OP_CPU_LOAD));
+        String ramusage = String.valueOf(readStat(OP_RAM_USAGE) / 1024);
+
+        String[] line = new String[] {
+                csvData.get(DATASET_SIZE_KEY),
+                csvData.get(SINGLE_VECTOR_SIZE_KEY),
+                csvData.get(FILE_SIZE_KEY),
+                cpuload,
+                ramusage,
+                String.valueOf(TOPK),
+                String.valueOf(queueSize),
+                String.valueOf(timeElapsed)
+        };
+
+        stats.add(line);
+        writeCSV(stats, "lucene-hnsw-results.csv");
+        deleteAllTempFiles();
+    }
+
+    private void readAndQuery(MMapDirectory dir, CustomVectorProvider vectorData, int indexedDoc) throws IOException {
+        Instant start = Instant.now();
+        try (IndexReader reader = DirectoryReader.open(dir)) {
+            for (LeafReaderContext ctx : reader.leaves()) {
+                VectorValues values = ctx.reader().getVectorValues("field");
+                assertEquals(dim, values.dimension());
+//                assertEquals(indexedDoc, values.size());
+//                assertEquals(vectorData.size(), ctx.reader().maxDoc());
+//                assertEquals(vectorData.size(), ctx.reader().numDocs());
+                // KnnGraphValues graphValues = ((Lucene90HnswVectorsReader) ((PerFieldKnnVectorsFormat.FieldsReader) ((CodecReader) ctx.reader())
+                // .getVectorReader())
+                // .getFieldReader("field"))
+                // .getGraphValues("field");
+
+                TopDocs results = doKnnSearch(ctx.reader(), "field", query, 2, indexedDoc);
+                System.out.println();
+                System.out.println("Doc Based Search:");
+                System.out.println(String.format("Searching for NN of %s", Arrays.toString(query)));
+                System.out.println("TotalHits: " + results.totalHits.value);
+                for (int i = 0; i < results.scoreDocs.length; i++) {
+                    ScoreDoc doc = results.scoreDocs[i];
+                     System.out.println("Matches: " + doc.doc + " = " + doc.score);
+                    customVectorProvider.print(doc.doc);
+                }
+            }
+        }
+        Instant finish = Instant.now();
+        long timeElapsed = Duration.between(start, finish).toMillis();
+        System.out.println("Read and Query elapsed time = " + timeElapsed + "ms");
+    }
+
+    private static void printResults(NeighborQueue nn, CustomVectorProvider customVectorProvider, float[] query) {
         // Print the results
         System.out.println();
         System.out.println(String.format("Searching for NN of %s", Arrays.toString(query)));
@@ -131,54 +215,13 @@ public class LuceneHnswGraphTest {
         System.out.println("---------");
         for (int i = 0; i < nn.size(); i++) {
             int id = nn.pop();
-//            Vector2D vec = vectors.get(id);
-//            vec.print(id);
             customVectorProvider.print(id);
         }
-        Instant finish = Instant.now();
-        long timeElapsed = Duration.between(start, finish).toMillis();
-        System.out.println("testSearchViaHnswGraph elapsed time = " + timeElapsed + "ms");
     }
 
-    private void readAndQuery(MMapDirectory dir, CustomVectorProvider vectorData, int indexedDoc) throws IOException {
-        Instant start = Instant.now();
-        try (IndexReader reader = DirectoryReader.open(dir)) {
-            for (LeafReaderContext ctx : reader.leaves()) {
-                VectorValues values = ctx.reader().getVectorValues("field");
-                assertEquals(dim, values.dimension());
-                assertEquals(indexedDoc, values.size());
-                assertEquals(vectorData.size(), ctx.reader().maxDoc());
-                assertEquals(vectorData.size(), ctx.reader().numDocs());
-                // KnnGraphValues graphValues = ((Lucene90HnswVectorsReader) ((PerFieldKnnVectorsFormat.FieldsReader) ((CodecReader) ctx.reader())
-                // .getVectorReader())
-                // .getFieldReader("field"))
-                // .getGraphValues("field");
-
-                query = getQuery();
-
-                TopDocs results = doKnnSearch(ctx.reader(), "field", query, 2, indexedDoc);
-                System.out.println();
-                System.out.println("Doc Based Search:");
-//                System.out.println(String.format("Searching for NN of [%.2f | %.2f]", query[0], query[1]));
-                System.out.println(String.format("Searching for NN of %s", Arrays.toString(query)));
-                System.out.println("TotalHits: " + results.totalHits.value);
-                for (int i = 0; i < results.scoreDocs.length; i++) {
-                    ScoreDoc doc = results.scoreDocs[i];
-                    // System.out.println("Matches: " + doc.doc + " = " + doc.score);
-//                    Vector2D vec = vectorData.get(doc.doc);
-//                    vec.print(doc.doc);
-                    customVectorProvider.print(doc.doc);
-                }
-            }
-        }
-        Instant finish = Instant.now();
-        long timeElapsed = Duration.between(start, finish).toMillis();
-        System.out.println("Read and Query elapsed time = " + timeElapsed + "ms");
-    }
-
-    private float[] getQuery() {
-        float[] arr = new float[100];
-        for (int i = 0; i < 100; i++) {
+    public static float[] getQuery() {
+        float[] arr = new float[dim];
+        for (int i = 0; i < dim; i++) {
             arr[i] = new Random().nextFloat();
         }
         return arr;
@@ -211,8 +254,7 @@ public class LuceneHnswGraphTest {
             }
         }
         Instant finish = Instant.now();
-        long timeElapsed = Duration.between(start, finish).toMillis();
-        System.out.println("writeIndex elapsed time = " + timeElapsed + "ms");
+        System.out.println("writeIndex elapsed time = " + trackTimeElapsed(start, finish) + "ms");
         return indexedDoc;
     }
 
@@ -231,107 +273,61 @@ public class LuceneHnswGraphTest {
     }
 
 
-    public static float[][] readDataset() throws URISyntaxException {
-        ClassLoader classLoader = HnswGraphTest.class.getClassLoader();
-//        String filename = "kosarak-jaccard.hdf5";
-//        String filename = "lastfm-64-dot.hdf5";
-        String filename = "glove-25-angular.hdf5";
-        URI testFileUri = Objects.requireNonNull(classLoader.getResource(filename)).toURI();
-        try (HdfFile hdfFile = new HdfFile(Paths.get(testFileUri))) {
+    public static float[][] readDataset() {
+        /*
+         * caratteristiche dataset
+         * numero vettori,
+         * dimensione vettori,
+         * grandezza in MB (opzionale)
+         */
+        String filename = FILENAME;
+        URI uri = Objects.requireNonNull(Paths.get(DATASET_FOLDER + filename)).toUri();
+        try (HdfFile hdfFile = new HdfFile(Paths.get(uri))) {
             // per recuperare il path => hdfFile.getChildren()
-            Dataset dataset = hdfFile.getDatasetByPath("/distances");
+            Dataset dataset = hdfFile.getDatasetByPath("/train");
             // data will be a Java array with the dimensions of the HDF5 dataset
             return (float[][]) dataset.getData();
-//            assertEquals(500, data.length);
+        }
+    }
+
+    public static float[][] readDataset(String filename) {
+        URI uri = Objects.requireNonNull(Paths.get(DATASET_FOLDER + filename)).toUri();
+        try (HdfFile hdfFile = new HdfFile(Paths.get(uri))) {
+            // per recuperare il path => hdfFile.getChildren()
+            Dataset dataset = hdfFile.getDatasetByPath("/train");
+            // data will be a Java array with the dimensions of the HDF5 dataset
+            return (float[][]) dataset.getData();
+        }
+    }
+
+    public static <T> T[] addToFirstPosOfArray(T[] elements, T element) {
+        T[] newArray = Arrays.copyOf(elements, elements.length + 1);
+        newArray[0] = element;
+        System.arraycopy(elements, 0, newArray, 1, elements.length);
+
+        return newArray;
+    }
+
+    private CustomVectorProvider initDataset(String filename, Map<String, String> csvData) {
+        URI uri = Objects.requireNonNull(Paths.get(DATASET_FOLDER + filename)).toUri();
+        try (HdfFile hdfFile = new HdfFile(Paths.get(uri))) {
+            // per recuperare il path => hdfFile.getChildren()
+            Dataset dataset = hdfFile.getDatasetByPath("/train");
+            // data will be a Java array with the dimensions of the HDF5 dataset
+            float[][] data = (float[][]) dataset.getData();
+
+            var datasetSize = data.length;
+            var vectorDimension = data[0].length;
+            var filesize = getFileSizeInMB(filename);
+
+            csvData.put(DATASET_SIZE_KEY, String.valueOf(datasetSize));
+            csvData.put(TestUtil.CsvUtil.SINGLE_VECTOR_SIZE_KEY, String.valueOf(vectorDimension));
+            csvData.put(TestUtil.CsvUtil.FILE_SIZE_KEY, String.valueOf(filesize));
+
+            addToFirstPosOfArray(data, query);
+            return new CustomVectorProvider(data);
         }
     }
 }
 
-class VectorMulti {
-    float[][] arr;
 
-    public VectorMulti(int row, int totalRows, float[] values) {
-        if (arr == null) {
-            arr = new float[totalRows][values.length];
-        }
-        arr[row] = values;
-    }
-
-    public float[] toArray(int row) {
-        return arr[row];
-    }
-}
-
-class CustomVectorProvider extends VectorValues implements RandomAccessVectorValues, RandomAccessVectorValuesProducer {
-
-    int doc = -1;
-    private final float[][] data;
-
-    public CustomVectorProvider(float[][] data) {
-        this.data = data;
-    }
-
-    public float[] get(int idx) {
-        return data[idx];
-    }
-
-    @Override
-    public float[] vectorValue(int i) throws IOException {
-        return data[i];
-    }
-
-    @Override
-    public BytesRef binaryValue(int i) throws IOException {
-        return null;
-    }
-
-    @Override
-    public RandomAccessVectorValues randomAccess() {
-        return new CustomVectorProvider(data);
-    }
-
-    @Override
-    public int dimension() {
-        return data[0].length;
-    }
-
-    @Override
-    public int size() {
-        return data.length;
-    }
-
-    @Override
-    public float[] vectorValue() throws IOException {
-        return vectorValue(doc);
-    }
-
-    @Override
-    public int docID() {
-        return doc;
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-        return advance(doc + 1);
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-        if (target >= 0 && target < data.length) {
-            doc = target;
-        } else {
-            doc = NO_MORE_DOCS;
-        }
-        return doc;
-    }
-
-    @Override
-    public long cost() {
-        return data.length;
-    }
-
-
-    public void print(int ord) throws IOException {
-        System.out.println(Arrays.toString(vectorValue(ord)) + " => " + Arrays.toString(data[ord]));
-    }
-}

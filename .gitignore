@@ -2,6 +2,7 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+hdf5/
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
@@ -41,3 +42,4 @@ fvec
 pq_cache
 siftsmall
 src/test/resources
+stats

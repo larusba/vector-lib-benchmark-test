@@ -1,0 +1,1 @@
+v1,lucene_hnsw_maxConn:16-beamWidth:100-scalarQuantization:false-numThreads:5-forceMerge:false_numCandidates:10,glove-100-angular,lucene,hnsw,beamWidth:100-forceMerge:false-maxConn:16-numThreads:5-scalarQuantization:false,numCandidates:10,jfr:true-testOnTrain:false,NaN,926294,16532000,0.0,0.0,0.0,0.0,0.0,0.0
