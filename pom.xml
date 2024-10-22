@@ -1,0 +1,313 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.example</groupId>
+  <artifactId>example-project</artifactId>
+  <version>1.0-SNAPSHOT</version>
+
+
+  
+  <properties>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <jdk.version>21</jdk.version>
+    <lucene.version>9.0.0</lucene.version>
+    <awssdk.version>2.21.10</awssdk.version>
+    <slf4j.version>2.0.16</slf4j.version>
+    <jvector.version>3.0.0</jvector.version>
+<!--    <exec.mainClass>javaannbench.BenchRunner</exec.mainClass>-->
+  </properties>
+
+
+  <repositories>
+    <repository>
+      <id>central</id>
+      <url>https://repo.maven.apache.org/maven2</url>
+    </repository>
+  </repositories>
+  
+  <dependencies>
+    <!-- List of dependencies equivalent to your Gradle build file -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-csv</artifactId>
+      <version>1.10.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>32.1.3-jre</version>
+    </dependency>
+
+
+    <dependency>
+      <groupId>io.github.jbellis</groupId>
+      <artifactId>jvector</artifactId>
+      <version>${jvector.version}</version>
+      
+    </dependency>
+    <dependency>
+      <groupId>com.indeed</groupId>
+      <artifactId>util-mmap</artifactId>
+      <version>1.0.52-3042601</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>slf4j-api</artifactId>
+          <groupId>org.slf4j</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+
+    <!-- https://mvnrepository.com/artifact/io.jhdf/jhdf -->
+    <dependency>
+      <groupId>io.jhdf</groupId>
+      <artifactId>jhdf</artifactId>
+      <version>0.8.2</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/commons-io/commons-io -->
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.16.1</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.16.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-core</artifactId>
+      <version>${lucene.version}</version>
+<!--      <scope>test</scope>-->
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-queryparser</artifactId>
+      <version>${lucene.version}</version>
+<!--      <scope>test</scope>-->
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>5.11.0</version>
+<!--      <scope>test</scope>-->
+    </dependency>
+    <dependency>
+      <groupId>com.github.oshi</groupId>
+      <artifactId>oshi-core</artifactId>
+      <version>6.6.3</version>
+<!--      <scope>test</scope>-->
+    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>junit</groupId>-->
+<!--      <artifactId>junit</artifactId>-->
+<!--      <version>4.13.2</version>-->
+<!--      <scope>test</scope>-->
+<!--    </dependency>-->
+
+
+  
+    <!-- Logback Classic -->
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.4.11</version>
+    </dependency>
+
+    <!-- Commons IO -->
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.14.0</version>
+    </dependency>
+
+    <!-- Picocli -->
+    <dependency>
+      <groupId>info.picocli</groupId>
+      <artifactId>picocli</artifactId>
+      <version>4.7.5</version>
+    </dependency>
+
+    <!-- Progressbar -->
+    <dependency>
+      <groupId>me.tongfei</groupId>
+      <artifactId>progressbar</artifactId>
+      <version>0.10.0</version>
+    </dependency>
+
+    <!-- OSHI Core -->
+    <dependency>
+      <groupId>com.github.oshi</groupId>
+      <artifactId>oshi-core</artifactId>
+      <version>6.4.3</version>
+    </dependency>
+
+    <!-- Commons Math3 -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-math3</artifactId>
+      <version>3.6.1</version>
+    </dependency>
+
+    <!-- SLF4J JUL to SLF4J Bridge -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jul-to-slf4j</artifactId>
+      <version>2.0.9</version>
+    </dependency>
+
+    <!-- Jackson Dataformat YAML -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-yaml</artifactId>
+      <version>2.15.3</version>
+    </dependency>
+
+    <!-- Jackson Databind -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.15.3</version>
+    </dependency>
+
+    <!-- JLine -->
+    <dependency>
+      <groupId>org.jline</groupId>
+      <artifactId>jline</artifactId>
+      <version>3.23.0</version>
+    </dependency>
+
+    <!-- Indeed Util MMap -->
+    <dependency>
+      <groupId>com.indeed</groupId>
+      <artifactId>util-mmap</artifactId>
+      <version>1.0.52-3042601</version>
+    </dependency>
+
+    <!-- Prometheus Simpleclient -->
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient</artifactId>
+      <version>0.12.0</version>
+    </dependency>
+
+    <!-- Prometheus Simpleclient HTTPServer -->
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient_httpserver</artifactId>
+      <version>0.12.0</version>
+    </dependency>
+
+    <!-- Prometheus Simpleclient Hotspot -->
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient_hotspot</artifactId>
+      <version>0.12.0</version>
+    </dependency>
+  </dependencies>
+
+
+  <build>
+    <plugins>
+      <!-- Compiler plugin -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.8.1</version>
+        <configuration>
+          <source>${maven.compiler.source}</source>
+          <target>${maven.compiler.target}</target>
+          <compilerArgs>
+            <arg>--enable-preview</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.0.0-M7</version> <!-- pick your own version -->
+        <configuration>
+          <forkCount>1</forkCount>
+          <argLine>--enable-preview=jdk.incubator.vector</argLine>
+          <argLine>-XX:+UnlockExperimentalVMOptions</argLine>
+          <argLine>-XX:+EnableVectorSupport</argLine>
+          <argLine>--add-modules=jdk.incubator.vector</argLine>
+          <argLine>--add-modules=jdk.incubator.vector</argLine>
+          <argLine>-ea</argLine>
+        </configuration>
+      </plugin>
+      
+      <!-- Exec plugin to handle application run -->
+<!--      <plugin>-->
+<!--        <groupId>org.codehaus.mojo</groupId>-->
+<!--        <artifactId>exec-maven-plugin</artifactId>-->
+<!--        <version>3.0.0</version>-->
+<!--        <configuration>-->
+<!--          <mainClass>${exec.mainClass}</mainClass>-->
+<!--          <arguments>-->
+<!--            <argument>&#45;&#45;enable-preview</argument>-->
+<!--            <argument>-XX:+UnlockExperimentalVMOptions</argument>-->
+<!--            <argument>-XX:+EnableVectorSupport</argument>-->
+<!--            <argument>&#45;&#45;add-modules</argument>-->
+<!--            <argument>jdk.incubator.vector</argument>-->
+<!--            <argument>&#45;&#45;enable-native-access=ALL-UNNAMED</argument>-->
+<!--            <argument>-ea</argument>-->
+<!--          </arguments>-->
+<!--        </configuration>-->
+<!--      </plugin>-->
+
+      <!-- Toolchain plugin to use JDK 21 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-toolchains-plugin</artifactId>
+        <version>3.0.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>toolchain</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <toolchains>
+            <jdk>
+              <version>${jdk.version}</version>
+            </jdk>
+          </toolchains>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+<!--  <profiles>-->
+<!--    <profile>-->
+<!--      <id>runIoUring</id>-->
+<!--      <activation>-->
+<!--        <activeByDefault>false</activeByDefault>-->
+<!--      </activation>-->
+<!--      <build>-->
+<!--        <plugins>-->
+<!--          <plugin>-->
+<!--            <groupId>org.codehaus.mojo</groupId>-->
+<!--            <artifactId>exec-maven-plugin</artifactId>-->
+<!--            <version>3.0.0</version>-->
+<!--            <configuration>-->
+<!--              <mainClass>javaannbench.util.iouring.WrappedLib</mainClass>-->
+<!--              <arguments>-->
+<!--                <argument>-Djava.library.path=/usr/lib/aarch64-linux-gnu</argument>-->
+<!--                &lt;!&ndash; Add other JVM args as needed &ndash;&gt;-->
+<!--              </arguments>-->
+<!--            </configuration>-->
+<!--          </plugin>-->
+<!--        </plugins>-->
+<!--      </build>-->
+<!--    </profile>-->
+<!--  </profiles>-->
+</project>

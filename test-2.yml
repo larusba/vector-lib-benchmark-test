@@ -1,0 +1,19 @@
+dataset: glove-100-angular
+provider: lucene
+type: hnsw
+runtime:
+  jfr: false
+build:
+  maxConn: 16
+  beamWidth: 100
+  M: 16
+  neighborOverflow: 2
+  0-alpha: 1
+  numCandidates: 100
+  alpha: 1
+  pqFactor: 0
+  inGraphVectors: true
+  scalarQuantization: false
+  numThreads: 1
+  forceMerge: false
+  
