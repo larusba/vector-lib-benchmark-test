@@ -68,13 +68,13 @@ public class JVectorTest {
     
     @Test
     public void testJVectorHdf5InMemory() throws IOException {
-        var dataset = Hdf5Loader.load(FILENAME);
+        var dataset = Hdf5Loader.loadJvector(FILENAME);
         execInMemory((ArrayList<VectorFloat<?>>) dataset.baseVectors);
     }
 
     @Test
     public void testJVectorHdf5DiskANN() throws IOException {
-        var dataset = Hdf5Loader.load(FILENAME);
+        var dataset = Hdf5Loader.loadJvector(FILENAME);
         execDiskAnn(dataset.baseVectors, dataset.queryVectors, (List<Set<Integer>>) dataset.groundTruth);
     }
 

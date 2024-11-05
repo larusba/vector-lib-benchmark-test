@@ -27,7 +27,7 @@ public class BuildBench {
 
   public static void build(BuildSpec spec, Path datasetPath, Path indexesPath, Path reportsPath)
       throws Exception {
-    var dataset = Datasets.load(datasetPath, spec.dataset());
+    var dataset = Datasets.load(spec.provider(), datasetPath, spec.dataset());
     var jfr =
         Optional.ofNullable(spec.runtime().get("jfr")).map(Boolean::parseBoolean).orElse(false);
 

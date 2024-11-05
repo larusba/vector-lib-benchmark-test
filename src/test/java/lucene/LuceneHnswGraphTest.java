@@ -79,7 +79,7 @@ public class LuceneHnswGraphTest {
     private static float[] query = getQuery();
     private static final int TOPK = 10;
 
-    private static final Path indexPath = Paths.get("index-lucene-tre");
+    private static final Path indexPath = Paths.get("index-lucene-45");
 //    private static final Path indexPath = Paths.get("index-kevin/idx");
     private static final VectorSimilarityFunction similarityFunction = VectorSimilarityFunction.EUCLIDEAN;
     private static final int maxConn = 14;
@@ -125,9 +125,7 @@ public class LuceneHnswGraphTest {
     @Test
     public void testSearchViaHnswGraph() throws IOException, InterruptedException {
         new Timer().scheduleAtFixedRate(new MonitoringTask(), 0, 300);
-
-        Instant start = Instant.now();
-    public void testSearchViaHnswGraph() throws IOException {
+        
         Instant start = Instant.now();
         // Build the graph manually and run the query
         HnswGraphBuilder builder = new HnswGraphBuilder(customVectorProvider, similarityFunction, maxConn, beamWidth, seed);
@@ -153,38 +151,38 @@ public class LuceneHnswGraphTest {
         Instant finish = Instant.now();
         long timeElapsed = Duration.between(start, finish).toMillis();
         System.out.println("testSearchViaHnswGraph elapsed time = " + timeElapsed + "ms");
-
-        // Write CSV
-        String cpuload = String.valueOf(readStat(OP_CPU_LOAD));
-        String ramusage = String.valueOf(readStat(OP_RAM_USAGE) / 1024);
-
-        String[] line = new String[] {
-                csvData.get(DATASET_SIZE_KEY),
-                csvData.get(SINGLE_VECTOR_SIZE_KEY),
-                csvData.get(FILE_SIZE_KEY),
-                cpuload,
-                ramusage,
-                String.valueOf(TOPK),
-                String.valueOf(queueSize),
-                String.valueOf(timeElapsed)
-        };
-
-        stats.add(line);
-        writeCSV(stats, "lucene-hnsw-results.csv");
-        deleteAllTempFiles();
-        System.out.println("Top vector");
-        customVectorProvider.print(nn.topNode());
-        System.out.println(topVec[0]);
-        System.out.println("---------");
-        for (int i = 0; i < nn.size(); i++) {
-            int id = nn.pop();
-//            Vector2D vec = vectors.get(id);
-//            vec.print(id);
-            customVectorProvider.print(id);
-        }
-        Instant finish = Instant.now();
-        long timeElapsed = Duration.between(start, finish).toMillis();
-        System.out.println("testSearchViaHnswGraph elapsed time = " + timeElapsed + "ms");
+//
+//        // Write CSV
+//        String cpuload = String.valueOf(readStat(OP_CPU_LOAD));
+//        String ramusage = String.valueOf(readStat(OP_RAM_USAGE) / 1024);
+//
+//        String[] line = new String[] {
+//                csvData.get(DATASET_SIZE_KEY),
+//                csvData.get(SINGLE_VECTOR_SIZE_KEY),
+//                csvData.get(FILE_SIZE_KEY),
+//                cpuload,
+//                ramusage,
+//                String.valueOf(TOPK),
+//                String.valueOf(queueSize),
+//                String.valueOf(timeElapsed)
+//        };
+//
+//        stats.add(line);
+//        writeCSV(stats, "lucene-hnsw-results.csv");
+//        deleteAllTempFiles();
+//        System.out.println("Top vector");
+//        customVectorProvider.print(nn.topNode());
+//        System.out.println(topVec[0]);
+//        System.out.println("---------");
+//        for (int i = 0; i < nn.size(); i++) {
+//            int id = nn.pop();
+////            Vector2D vec = vectors.get(id);
+////            vec.print(id);
+//            customVectorProvider.print(id);
+//        }
+//        Instant finish = Instant.now();
+//        long timeElapsed = Duration.between(start, finish).toMillis();
+//        System.out.println("testSearchViaHnswGraph elapsed time = " + timeElapsed + "ms");
     }
 
     private void readAndQuery(MMapDirectory dir, CustomVectorProvider vectorData, int indexedDoc) throws IOException {
@@ -233,7 +231,7 @@ public class LuceneHnswGraphTest {
             int id = nn.pop();
             customVectorProvider.print(id);
         }
-        System.out.println("Read and Query elapsed time = " + timeElapsed + "ms");
+//        System.out.println("Read and Query elapsed time = " + timeElapsed + "ms");
     }
 
     public static float[] getQuery() {
@@ -270,8 +268,8 @@ public class LuceneHnswGraphTest {
                 indexedDoc++;
             }
         }
-        Instant finish = Instant.now();
-        System.out.println("writeIndex elapsed time = " + trackTimeElapsed(start, finish) + "ms");
+//        Instant finish = Instant.now();
+//        System.out.println("writeIndex elapsed time = " + trackTimeElapsed(start, finish) + "ms");
         Instant finish = Instant.now();
         long timeElapsed = Duration.between(start, finish).toMillis();
         System.out.println("writeIndex elapsed time = " + timeElapsed + "ms");
@@ -344,7 +342,8 @@ public class LuceneHnswGraphTest {
             csvData.put(TestUtil.CsvUtil.SINGLE_VECTOR_SIZE_KEY, String.valueOf(vectorDimension));
             csvData.put(TestUtil.CsvUtil.FILE_SIZE_KEY, String.valueOf(filesize));
 
-            addToFirstPosOfArray(data, query);
+            // todo - needed?
+            //  addToFirstPosOfArray(data, query);
             return new CustomVectorProvider(data);
         }
     }

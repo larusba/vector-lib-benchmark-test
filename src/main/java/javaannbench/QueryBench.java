@@ -11,6 +11,7 @@ import io.prometheus.client.hotspot.DefaultExports;
 import javaannbench.dataset.Datasets;
 import jdk.jfr.Configuration;
 import jdk.jfr.Recording;
+import jvector.util.DataSetJVector;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -20,6 +21,8 @@ import org.slf4j.LoggerFactory;
 import oshi.SystemInfo;
 import oshi.software.os.OSProcess;
 import oshi.software.os.OSThread;
+import util.DataSetInterfaceVector;
+import util.DataSetLucene;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -30,6 +33,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +47,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class QueryBench {
 
@@ -55,7 +60,7 @@ public class QueryBench {
   
   public static void test(QuerySpec spec, Path datasetsPath, Path indexesPath, Path reportsPath)
       throws Exception {
-    var dataset = javaannbench.dataset.Datasets.load(datasetsPath, spec.dataset());
+    var dataset = javaannbench.dataset.Datasets.load(spec.provider(), datasetsPath, spec.dataset());
     try (var index =
         Index.Querier.fromParameters(
             dataset, indexesPath, spec.provider(), spec.type(), spec.build(), spec.query())) {
@@ -72,7 +77,7 @@ public class QueryBench {
       var recall = recall(spec.runtime());
       var threadStats = threadStats(spec.runtime());
       var random = random(spec.runtime());
-      var numQueries = testOnTrain ? trainTestQueries : dataset.getQueryRavv().size();
+      var numQueries = testOnTrain ? trainTestQueries : getSize(dataset);
       var queries = new ArrayList<VectorFloat<?>>(numQueries);
 
       Preconditions.checkArgument(!(testOnTrain && recall));
@@ -80,9 +85,7 @@ public class QueryBench {
 
         for (int i = 0; i < numQueries; i++) {
           VectorFloat<?> vectorFloat =
-              testOnTrain
-                  ? dataset.getBaseRavv().getVector(random.nextInt(dataset.baseVectors.size()))
-                  : dataset.getQueryRavv().getVector(i);
+                  getVectorFloat(testOnTrain, dataset, random, i);
           queries.add(vectorFloat);
         }
 
@@ -158,7 +161,7 @@ public class QueryBench {
                                                   var query = queries.get(j);
                                                   Set<Integer> groundTruth = null;
                                                   if (recall) {
-                                                    groundTruth = dataset.groundTruth.get(j);
+                                                    groundTruth = getGroundTruth(j, dataset);
                                                   }
                                                   runQuery(
                                                       index,
@@ -187,7 +190,7 @@ public class QueryBench {
               for (int i = 0; i < test; i++) {
                 for (int j = 0; j < numQueries; j++) {
                   var query = queries.get(j);
-                  var groundTruth = dataset.groundTruth.get(j);
+                  var groundTruth = getGroundTruth(j, dataset);
                   runQuery(
                       index,
                       query,
@@ -244,10 +247,53 @@ public class QueryBench {
     }
   }
 
-  private static void runQuery(
+  private static <T> T getGroundTruth(int j, DataSetInterfaceVector dataset) {
+    if (dataset instanceof DataSetLucene lucene) {
+      return (T) lucene.groundTruth()[j];
+    } else if (dataset instanceof DataSetJVector jVector) {
+      return (T) jVector.groundTruth().get(j);
+    } else {
+        throw new RuntimeException("todo");
+    }
+//    return dataset.groundTruth.get(j);
+  }
+
+  private static <T> T getVectorFloat(boolean testOnTrain, DataSetInterfaceVector dataset, Random random, int i) throws IOException {
+    if (testOnTrain) {
+      if (dataset instanceof DataSetLucene lucene) {
+        return (T) lucene.baseVectorsArray().vectorValue(random.nextInt(lucene.baseVectorsArray().size()));
+      } else if (dataset instanceof DataSetJVector jVector) {
+        return (T) jVector.baseVectorsArray().get(jVector.baseVectorsArray().size());
+      }
+    }
+
+    if (dataset instanceof DataSetLucene lucene) {
+      return (T) lucene.queryVectorsArray().get(i);
+    } else if (dataset instanceof DataSetJVector jVector) {
+      return (T) jVector.queryVectorsArray().get(i);
+    } 
+//    else {
+      throw new RuntimeException("todo");
+//    }
+    
+//    return dataset.getQueryRavv().getVector(i);
+  }
+
+  private static int getSize(DataSetInterfaceVector dataset) {
+    if (dataset instanceof DataSetLucene lucene) {
+      return lucene.queryVectorsArray().size();
+    } else if (dataset instanceof DataSetJVector jVector) {
+      return jVector.queryVectorsArray().size();
+    } else {
+      throw new RuntimeException("todo");
+    }
+    
+  }
+
+  private static <T,V> void runQuery(
       Index.Querier index,
-      VectorFloat<?> query,
-      Set<Integer> groundTruth,
+      T query,
+      V groundTruth,
       int k,
       int i,
       int j,
@@ -302,7 +348,7 @@ public class QueryBench {
           results.size(),
           k);
 
-      var truePositives = groundTruth.stream().limit(k).filter(results::contains).count();
+      var truePositives = getStream(groundTruth).limit(k).filter(results::contains).count();
       var recall = (double) truePositives / k;
       recalls.addValue(recall);
     }
@@ -314,6 +360,15 @@ public class QueryBench {
 
     queryDurationSeconds.inc((double) duration.toNanos() / (1000 * 1000 * 1000));
     progress.inc();
+  }
+
+  private static <V> Stream getStream(V groundTruth) {
+    if (groundTruth instanceof List) {
+      List<? extends Set<Integer>> groundTruth1 = (List<? extends Set<Integer>>) groundTruth;
+      return groundTruth1.stream();
+    }
+    int[][] groundTruth1 = (int[][]) groundTruth;
+    return Arrays.stream(groundTruth1);
   }
 
   private static Prom startPromServer(QuerySpec spec, int numQueries) throws Exception {

@@ -1,11 +1,12 @@
 package javaannbench.index;
 
-import io.github.jbellis.jvector.graph.RandomAccessVectorValues;
+import io.github.jbellis.jvector.vector.VectorSimilarityFunction;
 import io.github.jbellis.jvector.vector.types.VectorFloat;
-import javaannbench.dataset.Datasets;
 import javaannbench.util.Bytes;
 import com.google.common.base.Preconditions;
-import jvector.util.DataSet;
+import jvector.util.DataSetJVector;
+import util.DataSetInterfaceVector;
+import util.DataSetLucene;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -32,29 +33,48 @@ public interface Index extends AutoCloseable {
 //    }
 
     static Builder fromParameters(
-          DataSet dataset,
+            DataSetInterfaceVector dataset,
         Path indexesPath,
         String provider,
         String type,
         Map<String, String> buildParameters)
         throws IOException {
       var parameters = new Parameters(provider, type, buildParameters);
-      return fromBuilderParameters(dataset, indexesPath, parameters);
-    }
-
-    private static Builder fromBuilderParameters(
-            DataSet dataset, Path indexesPath, Parameters parameters) throws IOException {
-      var datasetPath = indexesPath.resolve(dataset.name);
+//      return fromBuilderParameters(dataset, indexesPath, parameters);
+//    }
+//
+//    private static Builder fromBuilderParameters(
+//            DataSet dataset, Path indexesPath, Parameters parameters) throws IOException {
+      var datasetPath = indexesPath.resolve(dataset.name());
       Files.createDirectories(datasetPath);
-
-      return switch (parameters.provider) {
-        case "lucene" -> LuceneIndex.Builder.create(
-                dataset,
-            datasetPath, (RandomAccessVectorValues) dataset.getBaseRavv(), dataset.similarityFunction, parameters);
-        case "jvector" -> JVectorIndex.Builder.create(
-            datasetPath, (RandomAccessVectorValues) dataset.getBaseRavv(), dataset.similarityFunction, parameters);
-        default -> throw new RuntimeException("unknown index provider: " + parameters.type);
-      };
+      
+      
+      if (dataset instanceof DataSetLucene dataSet) {
+        return new LuceneIndex.Builder(
+//                  dataSet,
+                datasetPath, dataSet.baseVectorsArray(), dataSet.similarityFunction, parameters);
+      } else if (dataset instanceof DataSetJVector dataSet) {
+        return new JVectorIndex.Builder(
+                datasetPath, dataSet.getBaseRavv(), dataSet.similarityFunction(), parameters);
+      } else {
+        throw new RuntimeException("unknown index provider: " + parameters.type);
+      }
+      
+//      return switch (parameters.provider) {
+//        case (dataset instanceof DataSetLucene dataSet) -> {
+////          DataSet dataset1 = (DataSet) dataset;
+//          new LuceneIndex.Builder(
+////                  dataSet,
+//                  datasetPath, dataSet.baseVectorsArray(), dataSet.similarityFunction, parameters);
+//        }
+//        // todo - instance of jvector
+//        case (dataset instanceof DataSet dataSet) -> {
+////        case "jvector" -> 
+//          new JVectorIndex.Builder(
+//                  datasetPath, (RandomAccessVectorValues) dataSet.getBaseRavv(), dataSet.similarityFunction(), parameters);
+//        }
+//        default -> throw new RuntimeException("unknown index provider: " + parameters.type);
+//      };
     }
 
     record BuildSummary(List<BuildPhase> phases) {}
@@ -90,7 +110,7 @@ public interface Index extends AutoCloseable {
 
   interface Querier extends Index {
 
-    List<Integer> query(VectorFloat<?> vector, int k, boolean ensureIds) throws IOException;
+    List<Integer> query(Object vector, int k, boolean ensureIds) throws IOException;
 
 //    static Querier fromDescription(Datasets.Dataset dataset, Path indexesPath, String description)
 //        throws IOException {
@@ -99,7 +119,7 @@ public interface Index extends AutoCloseable {
 //    }
 
     static Querier fromParameters(
-        DataSet dataset,
+            DataSetInterfaceVector dataset,
         Path indexesPath,
         String provider,
         String type,
@@ -111,14 +131,14 @@ public interface Index extends AutoCloseable {
     }
 
     private static Querier fromQuerierParameters(
-            DataSet dataset, Path indexesPath, Parameters parameters) throws IOException {
-      var datasetPath = indexesPath.resolve(dataset.name);
+            DataSetInterfaceVector dataset, Path indexesPath, Parameters parameters) throws IOException {
+      var datasetPath = indexesPath.resolve(dataset.name());
 
       return switch (parameters.provider) {
         case "lucene" -> LuceneIndex.Querier.create(
-            indexesPath.resolve(dataset.name), parameters);
+            indexesPath.resolve(dataset.name()), parameters);
         case "jvector" -> JVectorIndex.Querier.create(
-             dataset, datasetPath, dataset.similarityFunction, dataset.getDimension(), parameters);
+                (DataSetJVector) dataset, datasetPath, (VectorSimilarityFunction) dataset.similarityFunction(), dataset.getDimension(), parameters);
         default -> throw new RuntimeException("unknown index provider: " + parameters.provider);
       };
     }

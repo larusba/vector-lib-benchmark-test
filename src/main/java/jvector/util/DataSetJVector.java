@@ -6,6 +6,7 @@ import io.github.jbellis.jvector.vector.VectorSimilarityFunction;
 import io.github.jbellis.jvector.vector.VectorUtil;
 import io.github.jbellis.jvector.vector.types.VectorFloat;
 import javaannbench.dataset.Datasets;
+import util.DataSetInterfaceVector;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,7 +24,9 @@ import static javaannbench.dataset.Datasets.SimilarityFunction;
  * Just changed {@link io.github.jbellis.jvector.vector.VectorSimilarityFunction}  to  {@link Datasets.SimilarityFunction},
  * in order to be agnostic and handle Lucene Index as well
  */
-public class DataSet {
+public class DataSetJVector implements DataSetInterfaceVector<
+        List<VectorFloat<?>>, List<VectorFloat<?>>, List<? extends Set<Integer>>, VectorSimilarityFunction
+        > {
     public final String name;
     public final Datasets.SimilarityFunction similarityFunction;
     public final List<VectorFloat<?>> baseVectors;
@@ -32,11 +35,42 @@ public class DataSet {
     private RandomAccessVectorValues baseRavv;
     private RandomAccessVectorValues queryRavv;
 
-    public DataSet(String name,
-                   Datasets.SimilarityFunction similarityFunction,
-                   List<VectorFloat<?>> baseVectors,
-                   List<VectorFloat<?>> queryVectors,
-                   List<? extends Set<Integer>> groundTruth)
+
+    @Override
+    public List<VectorFloat<?>> baseVectorsArray() {
+        return baseVectors;
+    }
+
+    @Override
+    public List<VectorFloat<?>> queryVectorsArray() {
+        return queryVectors;
+    }
+
+    @Override
+    public List<? extends Set<Integer>> groundTruth() {
+        return groundTruth;
+    }
+
+    @Override
+    public VectorSimilarityFunction similarityFunction() {
+        return switch (similarityFunction) {
+            case COSINE -> VectorSimilarityFunction.COSINE;
+            case DOT_PRODUCT -> VectorSimilarityFunction.DOT_PRODUCT;
+            case EUCLIDEAN -> VectorSimilarityFunction.EUCLIDEAN;
+        };
+    }
+
+    @Override
+    public String name() {
+        return "";
+    }
+    
+    
+    public DataSetJVector(String name,
+                          Datasets.SimilarityFunction similarityFunction,
+                          List<VectorFloat<?>> baseVectors,
+                          List<VectorFloat<?>> queryVectors,
+                          List<? extends Set<Integer>> groundTruth)
     {
         if (baseVectors.isEmpty()) {
             throw new IllegalArgumentException("Base vectors must not be empty");
@@ -69,11 +103,11 @@ public class DataSet {
      * Return a dataset containing the given vectors, scrubbed free from zero vectors and normalized to unit length.
      * Note: This only scrubs and normalizes for dot product similarity.
      */
-    public static DataSet getScrubbedDataSet(String pathStr,
-                                             Datasets.SimilarityFunction vsf,
-                                             List<VectorFloat<?>> baseVectors,
-                                             List<VectorFloat<?>> queryVectors,
-                                             List<Set<Integer>> groundTruth)
+    public static DataSetJVector getScrubbedDataSet(String pathStr,
+                                                    Datasets.SimilarityFunction vsf,
+                                                    List<VectorFloat<?>> baseVectors,
+                                                    List<VectorFloat<?>> queryVectors,
+                                                    List<Set<Integer>> groundTruth)
     {
         // remove zero vectors and duplicates, noting that this will change the indexes of the ground truth answers
         List<VectorFloat<?>> scrubbedBaseVectors;
@@ -129,7 +163,7 @@ public class DataSet {
         }
 
         assert scrubbedQueryVectors.size() == gtSet.size();
-        return new DataSet(pathStr, vsf, scrubbedBaseVectors, scrubbedQueryVectors, gtSet);
+        return new DataSetJVector(pathStr, vsf, scrubbedBaseVectors, scrubbedQueryVectors, gtSet);
     }
 
     private static void normalizeAll(Iterable<VectorFloat<?>> vectors) {
@@ -163,4 +197,8 @@ public class DataSet {
         }
         return queryRavv;
     }
+    
+//    public CustomVectorProvider getBaseRavvLucene() {
+//        
+//    }
 }

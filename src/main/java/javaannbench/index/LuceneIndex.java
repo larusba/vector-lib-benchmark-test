@@ -7,8 +7,6 @@ import javaannbench.util.Bytes;
 import javaannbench.util.Exceptions;
 import javaannbench.util.Records;
 import com.google.common.base.Preconditions;
-import io.github.jbellis.jvector.graph.RandomAccessVectorValues;
-import jvector.util.DataSet;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.codecs.lucene90.Lucene90Codec;
@@ -28,20 +26,15 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.MergeTrigger;
-import org.apache.lucene.index.SegmentCommitInfo;
-import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.search.IndexSearcher;
 //import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.KnnVectorQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
-import org.checkerframework.checker.units.qual.C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import utils.CustomVectorProvider;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -50,12 +43,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
-
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 public final class LuceneIndex {
   private static final Logger LOGGER = LoggerFactory.getLogger(LuceneIndex.class);
@@ -118,38 +107,31 @@ public final class LuceneIndex {
 
   public static final class Builder implements Index.Builder {
 
-    private final RandomAccessVectorValues vectors;
+    private final CustomVectorProvider vectors;
     private final MMapDirectory directory;
     private final IndexWriter writer;
     private final AtomicBoolean shouldMerge;
     private final Provider provider;
     private final BuildParameters buildParams;
     private final VectorSimilarityFunction similarityFunction;
-    private final DataSet dataSet;
+//    private final DataSet dataSet;
 
-    private Builder(
-            DataSet dataSet,
-        RandomAccessVectorValues vectors,
-        MMapDirectory directory,
-        IndexWriter writer,
-        AtomicBoolean shouldMerge,
-        Provider provider,
-        BuildParameters buildParams,
-        VectorSimilarityFunction similarityFunction) {
-      this.vectors = vectors;
-      this.directory = directory;
-      this.writer = writer;
-      this.shouldMerge = shouldMerge;
-      this.provider = provider;
-      this.buildParams = buildParams;
-      this.similarityFunction = similarityFunction;
-      this.dataSet = dataSet;
-    }
+    public Builder(
+//            DataSet dataSet,
+//            RandomAccessVectorValues vectors,
+//            MMapDirectory directory,
+//            IndexWriter writer,
+//            AtomicBoolean shouldMerge,
+//            Provider provider,
+//            BuildParameters buildParams,
+//            VectorSimilarityFunction similarityFunction) {
 
-    public static Index.Builder create(
-            DataSet dataSet,
+//    }
+//
+//    public static Index.Builder create(
+//            DataSet dataSet,
         Path indexesPath,
-        RandomAccessVectorValues vectors,
+            CustomVectorProvider vectors,
         Datasets.SimilarityFunction similarityFunction,
         Parameters parameters)
         throws IOException {
@@ -225,71 +207,71 @@ public final class LuceneIndex {
 //          };
 
       var shouldMerge = new AtomicBoolean(false);
-      var mergePolicy =
-          new MergePolicy() {
-
-            @Override
-            public MergeSpecification findMerges(
-                MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
-                throws IOException {
-              System.out.println("findMerges triggered");
-
-              if (!shouldMerge.get()) {
-                System.out.println("shouldMerge is false, skipping");
-                return null;
-              }
-
-              var infos = segmentInfos.asList();
-              System.out.println("infos = " + infos);
-              System.out.println("infos.size() = " + infos.size());
-
-              if (infos.size() == 1) {
-                System.out.println("only one segment, skipping");
-                return null;
-              }
-
-              var merge = new OneMerge(infos);
-              var spec = new MergeSpecification();
-              spec.add(merge);
-              return spec;
-            }
-
-            @Override
-            public MergeSpecification findForcedMerges(
-                SegmentInfos segmentInfos,
-                int i,
-                Map<SegmentCommitInfo, Boolean> map,
-                MergeContext mergeContext)
-                throws IOException {
-              System.out.println("findForcedMerges triggered");
-
-              if (!shouldMerge.get()) {
-                System.out.println("shouldMerge is false, skipping");
-                return null;
-              }
-
-              var infos = segmentInfos.asList();
-              System.out.println("infos = " + infos);
-              System.out.println("infos.size() = " + infos.size());
-
-              if (infos.size() == 1) {
-                System.out.println("only one segment, skipping");
-                return null;
-              }
-
-              var merge = new OneMerge(infos);
-              var spec = new MergeSpecification();
-              spec.add(merge);
-              return spec;
-            }
-
-            @Override
-            public MergeSpecification findForcedDeletesMerges(
-                SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
-              System.out.println("findForcedDeletesMerges triggered");
-              return null;
-            }
-          };
+//      var mergePolicy =
+//          new MergePolicy() {
+//
+//            @Override
+//            public MergeSpecification findMerges(
+//                MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
+//                throws IOException {
+//              System.out.println("findMerges triggered");
+//
+//              if (!shouldMerge.get()) {
+//                System.out.println("shouldMerge is false, skipping");
+//                return null;
+//              }
+//
+//              var infos = segmentInfos.asList();
+//              System.out.println("infos = " + infos);
+//              System.out.println("infos.size() = " + infos.size());
+//
+//              if (infos.size() == 1) {
+//                System.out.println("only one segment, skipping");
+//                return null;
+//              }
+//
+//              var merge = new OneMerge(infos);
+//              var spec = new MergeSpecification();
+//              spec.add(merge);
+//              return spec;
+//            }
+//
+//            @Override
+//            public MergeSpecification findForcedMerges(
+//                SegmentInfos segmentInfos,
+//                int i,
+//                Map<SegmentCommitInfo, Boolean> map,
+//                MergeContext mergeContext)
+//                throws IOException {
+//              System.out.println("findForcedMerges triggered");
+//
+//              if (!shouldMerge.get()) {
+//                System.out.println("shouldMerge is false, skipping");
+//                return null;
+//              }
+//
+//              var infos = segmentInfos.asList();
+//              System.out.println("infos = " + infos);
+//              System.out.println("infos.size() = " + infos.size());
+//
+//              if (infos.size() == 1) {
+//                System.out.println("only one segment, skipping");
+//                return null;
+//              }
+//
+//              var merge = new OneMerge(infos);
+//              var spec = new MergeSpecification();
+//              spec.add(merge);
+//              return spec;
+//            }
+//
+//            @Override
+//            public MergeSpecification findForcedDeletesMerges(
+//                SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+//              System.out.println("findForcedDeletesMerges triggered");
+//              return null;
+//            }
+//          };
 
       var writer =
           new IndexWriter(
@@ -303,8 +285,17 @@ public final class LuceneIndex {
 //                  .setMergeScheduler(new SerialMergeScheduler())
           );
 
-      return new LuceneIndex.Builder(
-          dataSet, vectors, directory, writer, shouldMerge, provider, buildParams, similarity);
+      this.vectors = vectors;
+      this.directory = directory;
+      this.writer = writer;
+      this.shouldMerge = shouldMerge;
+      this.provider = provider;
+      this.buildParams = buildParams;
+      this.similarityFunction = similarity;
+//      this.dataSet = dataSet;
+      
+//      return new LuceneIndex.Builder(
+//          dataSet, vectors, directory, writer, shouldMerge, provider, buildParams, similarity);
     }
 
     @Override
@@ -364,7 +355,7 @@ public final class LuceneIndex {
 //        }
       
 //      try (var pool = new ForkJoinPool(numThreads)) {
-//        try (var progress = ProgressBar.create("building", size)) {
+        try (var progress = ProgressBar.create("building", size)) {
 //          pool.submit(
 //                  () -> {
 //      for (int i = 0; i < size; i++) {
@@ -374,15 +365,15 @@ public final class LuceneIndex {
                         .parallel()
                         .forEach(
                             i -> {
-//                              Exceptions.wrap(
-//                                  () -> {
+                              Exceptions.wrap(
+                                  () -> {
                                     var doc = new Document();
                                     doc.add(new StoredField(ID_FIELD, i));
                                     doc.add(
                                         new KnnVectorField(
                                             VECTOR_FIELD,
                                             // todo - change it???
-                                                (float[]) this.vectors.vectorValue(i).get(),
+                                                (float[]) this.vectors.vectorValue(i),
                                             this.similarityFunction));
                                 try {
                                     this.writer.addDocument(doc);
@@ -390,13 +381,13 @@ public final class LuceneIndex {
                                   System.out.println("e = " + e);
                                     throw new RuntimeException(e);
                                 }
-//                                  });
-//                              progress.inc();
+                                  });
+                              progress.inc();
 //                            });
                   });
 //              .join();
 //        }
-//      }
+      }
 
 //      }
       var buildEnd = Instant.now();
@@ -515,7 +506,8 @@ public final class LuceneIndex {
     }
 
     @Override
-    public List<Integer> query(VectorFloat<?> vector, int k, boolean ensureIds) throws IOException {
+    public List<Integer> query(Object vectorObj, int k, boolean ensureIds) throws IOException {
+      VectorFloat<?> vector = (VectorFloat<?>) vectorObj;
       var numCandidates =
           switch (queryParams) {
             case HnswQueryParameters hnsw -> hnsw.numCandidates;
