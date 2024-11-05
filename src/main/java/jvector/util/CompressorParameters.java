@@ -11,12 +11,12 @@ public abstract class CompressorParameters {
         return false;
     }
 
-    public String idStringFor(DataSet ds) {
+    public String idStringFor(DataSetJVector ds) {
         // only required when supportsCaching() is true
         throw new UnsupportedOperationException();
     }
 
-    public abstract VectorCompressor<?> computeCompressor(DataSet ds);
+    public abstract VectorCompressor<?> computeCompressor(DataSetJVector ds);
 
     public static class PQParameters extends CompressorParameters {
         private final int m;
@@ -32,12 +32,12 @@ public abstract class CompressorParameters {
         }
 
         @Override
-        public VectorCompressor<?> computeCompressor(DataSet ds) {
+        public VectorCompressor<?> computeCompressor(DataSetJVector ds) {
             return ProductQuantization.compute(ds.getBaseRavv(), m, k, isCentered, anisotropicThreshold);
         }
 
         @Override
-        public String idStringFor(DataSet ds) {
+        public String idStringFor(DataSetJVector ds) {
             return String.format("PQ_%s_%d_%d_%s_%s", ds.name, m, k, isCentered, anisotropicThreshold);
         }
 
@@ -49,14 +49,14 @@ public abstract class CompressorParameters {
 
     public static class BQParameters extends CompressorParameters {
         @Override
-        public VectorCompressor<?> computeCompressor(DataSet ds) {
+        public VectorCompressor<?> computeCompressor(DataSetJVector ds) {
             return new BinaryQuantization(ds.getDimension());
         }
     }
 
     private static class NoCompressionParameters extends CompressorParameters {
         @Override
-        public VectorCompressor<?> computeCompressor(DataSet ds) {
+        public VectorCompressor<?> computeCompressor(DataSetJVector ds) {
             return null;
         }
     }

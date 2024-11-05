@@ -23,6 +23,7 @@ public class MonitoringTask extends TimerTask {
         monitor();
     }
 
+    // TODO - use this???
     private void monitor() {
         SystemInfo systemInfo = new SystemInfo();
         HardwareAbstractionLayer hal = systemInfo.getHardware();

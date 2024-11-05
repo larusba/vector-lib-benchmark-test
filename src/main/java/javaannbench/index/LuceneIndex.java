@@ -7,8 +7,6 @@ import javaannbench.util.Bytes;
 import javaannbench.util.Exceptions;
 import javaannbench.util.Records;
 import com.google.common.base.Preconditions;
-import io.github.jbellis.jvector.graph.RandomAccessVectorValues;
-import jvector.util.DataSet;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.codecs.lucene90.Lucene90Codec;
@@ -28,20 +26,15 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.MergeTrigger;
-import org.apache.lucene.index.SegmentCommitInfo;
-import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.search.IndexSearcher;
 //import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.KnnVectorQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
-import org.checkerframework.checker.units.qual.C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import utils.CustomVectorProvider;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -50,8 +43,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
@@ -118,38 +109,31 @@ public final class LuceneIndex {
 
   public static final class Builder implements Index.Builder {
 
-    private final RandomAccessVectorValues vectors;
+    private final CustomVectorProvider vectors;
     private final MMapDirectory directory;
     private final IndexWriter writer;
     private final AtomicBoolean shouldMerge;
     private final Provider provider;
     private final BuildParameters buildParams;
     private final VectorSimilarityFunction similarityFunction;
-    private final DataSet dataSet;
+//    private final DataSet dataSet;
 
-    private Builder(
-            DataSet dataSet,
-        RandomAccessVectorValues vectors,
-        MMapDirectory directory,
-        IndexWriter writer,
-        AtomicBoolean shouldMerge,
-        Provider provider,
-        BuildParameters buildParams,
-        VectorSimilarityFunction similarityFunction) {
-      this.vectors = vectors;
-      this.directory = directory;
-      this.writer = writer;
-      this.shouldMerge = shouldMerge;
-      this.provider = provider;
-      this.buildParams = buildParams;
-      this.similarityFunction = similarityFunction;
-      this.dataSet = dataSet;
-    }
+    public Builder(
+//            DataSet dataSet,
+//            RandomAccessVectorValues vectors,
+//            MMapDirectory directory,
+//            IndexWriter writer,
+//            AtomicBoolean shouldMerge,
+//            Provider provider,
+//            BuildParameters buildParams,
+//            VectorSimilarityFunction similarityFunction) {
 
-    public static Index.Builder create(
-            DataSet dataSet,
+//    }
+//
+//    public static Index.Builder create(
+//            DataSet dataSet,
         Path indexesPath,
-        RandomAccessVectorValues vectors,
+            CustomVectorProvider vectors,
         Datasets.SimilarityFunction similarityFunction,
         Parameters parameters)
         throws IOException {
@@ -163,6 +147,8 @@ public final class LuceneIndex {
             case DOT_PRODUCT -> VectorSimilarityFunction.DOT_PRODUCT;
             case EUCLIDEAN -> VectorSimilarityFunction.EUCLIDEAN;
           };
+
+      System.out.println("similarity = " + similarity);
 
       var description = buildDescription(provider, buildParams);
       var path = indexesPath.resolve(description);
@@ -225,71 +211,71 @@ public final class LuceneIndex {
 //          };
 
       var shouldMerge = new AtomicBoolean(false);
-      var mergePolicy =
-          new MergePolicy() {
-
-            @Override
-            public MergeSpecification findMerges(
-                MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
-                throws IOException {
-              System.out.println("findMerges triggered");
-
-              if (!shouldMerge.get()) {
-                System.out.println("shouldMerge is false, skipping");
-                return null;
-              }
-
-              var infos = segmentInfos.asList();
-              System.out.println("infos = " + infos);
-              System.out.println("infos.size() = " + infos.size());
-
-              if (infos.size() == 1) {
-                System.out.println("only one segment, skipping");
-                return null;
-              }
-
-              var merge = new OneMerge(infos);
-              var spec = new MergeSpecification();
-              spec.add(merge);
-              return spec;
-            }
-
-            @Override
-            public MergeSpecification findForcedMerges(
-                SegmentInfos segmentInfos,
-                int i,
-                Map<SegmentCommitInfo, Boolean> map,
-                MergeContext mergeContext)
-                throws IOException {
-              System.out.println("findForcedMerges triggered");
-
-              if (!shouldMerge.get()) {
-                System.out.println("shouldMerge is false, skipping");
-                return null;
-              }
-
-              var infos = segmentInfos.asList();
-              System.out.println("infos = " + infos);
-              System.out.println("infos.size() = " + infos.size());
-
-              if (infos.size() == 1) {
-                System.out.println("only one segment, skipping");
-                return null;
-              }
-
-              var merge = new OneMerge(infos);
-              var spec = new MergeSpecification();
-              spec.add(merge);
-              return spec;
-            }
-
-            @Override
-            public MergeSpecification findForcedDeletesMerges(
-                SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
-              System.out.println("findForcedDeletesMerges triggered");
-              return null;
-            }
-          };
+//      var mergePolicy =
+//          new MergePolicy() {
+//
+//            @Override
+//            public MergeSpecification findMerges(
+//                MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
+//                throws IOException {
+//              System.out.println("findMerges triggered");
+//
+//              if (!shouldMerge.get()) {
+//                System.out.println("shouldMerge is false, skipping");
+//                return null;
+//              }
+//
+//              var infos = segmentInfos.asList();
+//              System.out.println("infos = " + infos);
+//              System.out.println("infos.size() = " + infos.size());
+//
+//              if (infos.size() == 1) {
+//                System.out.println("only one segment, skipping");
+//                return null;
+//              }
+//
+//              var merge = new OneMerge(infos);
+//              var spec = new MergeSpecification();
+//              spec.add(merge);
+//              return spec;
+//            }
+//
+//            @Override
+//            public MergeSpecification findForcedMerges(
+//                SegmentInfos segmentInfos,
+//                int i,
+//                Map<SegmentCommitInfo, Boolean> map,
+//                MergeContext mergeContext)
+//                throws IOException {
+//              System.out.println("findForcedMerges triggered");
+//
+//              if (!shouldMerge.get()) {
+//                System.out.println("shouldMerge is false, skipping");
+//                return null;
+//              }
+//
+//              var infos = segmentInfos.asList();
+//              System.out.println("infos = " + infos);
+//              System.out.println("infos.size() = " + infos.size());
+//
+//              if (infos.size() == 1) {
+//                System.out.println("only one segment, skipping");
+//                return null;
+//              }
+//
+//              var merge = new OneMerge(infos);
+//              var spec = new MergeSpecification();
+//              spec.add(merge);
+//              return spec;
+//            }
+//
+//            @Override
+//            public MergeSpecification findForcedDeletesMerges(
+//                SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+//              System.out.println("findForcedDeletesMerges triggered");
+//              return null;
+//            }
+//          };
 
       var writer =
           new IndexWriter(
@@ -303,8 +289,17 @@ public final class LuceneIndex {
 //                  .setMergeScheduler(new SerialMergeScheduler())
           );
 
-      return new LuceneIndex.Builder(
-          dataSet, vectors, directory, writer, shouldMerge, provider, buildParams, similarity);
+      this.vectors = vectors;
+      this.directory = directory;
+      this.writer = writer;
+      this.shouldMerge = shouldMerge;
+      this.provider = provider;
+      this.buildParams = buildParams;
+      this.similarityFunction = similarity;
+//      this.dataSet = dataSet;
+      
+//      return new LuceneIndex.Builder(
+//          dataSet, vectors, directory, writer, shouldMerge, provider, buildParams, similarity);
     }
 
     @Override
@@ -364,39 +359,59 @@ public final class LuceneIndex {
 //        }
       
 //      try (var pool = new ForkJoinPool(numThreads)) {
-//        try (var progress = ProgressBar.create("building", size)) {
+        try (var progress = ProgressBar.create("building", size)) {
+
+
+          while (vectors.nextDoc() != NO_MORE_DOCS) {
+            while (indexedDoc < vectors.docID()) {
+              // increment docId in the index by adding empty documents
+              writer.addDocument(new Document());
+              indexedDoc++;
+            }
+            Document doc = new Document();
+            // System.out.println("Got: " + v2.vectorValue()[0] + ":" + v2.vectorValue()[1] + "@" + v2.docID());
+            doc.add(new KnnVectorField("field", vectors.vectorValue(), similarityFunction));
+            doc.add(new StoredField("id", vectors.docID()));
+            writer.addDocument(doc);
+            indexedDoc++;
+            progress.inc();
+          }
+          
+          
 //          pool.submit(
 //                  () -> {
 //      for (int i = 0; i < size; i++) {
         
       
-                    IntStream.range(0, size)
-                        .parallel()
-                        .forEach(
-                            i -> {
+//                    IntStream.range(0, size)
+//                        .parallel()
+//                        .forEach(
+//                            i -> {
 //                              Exceptions.wrap(
 //                                  () -> {
-                                    var doc = new Document();
-                                    doc.add(new StoredField(ID_FIELD, i));
-                                    doc.add(
-                                        new KnnVectorField(
-                                            VECTOR_FIELD,
-                                            // todo - change it???
-                                                (float[]) this.vectors.vectorValue(i).get(),
-                                            this.similarityFunction));
-                                try {
-                                    this.writer.addDocument(doc);
-                                } catch (IOException e) {
-                                  System.out.println("e = " + e);
-                                    throw new RuntimeException(e);
-                                }
+//                                    var doc = new Document();
+//                                    doc.add(new StoredField(ID_FIELD, i));
+//                                    doc.add(
+//                                        new KnnVectorField(
+//                                            VECTOR_FIELD,
+//                                            // todo - change it???
+//                                                (float[]) this.vectors.vectorValue(i),
+//                                            this.similarityFunction));
+//                                try {
+//                                    this.writer.addDocument(doc);
+//                                } catch (IOException e) {
+//                                  System.out.println("e = " + e);
+//                                    throw new RuntimeException(e);
+//                                }
 //                                  });
 //                              progress.inc();
-//                            });
-                  });
+////                            });
+//                  });
 //              .join();
 //        }
-//      }
+          
+          progress.close();
+      }
 
 //      }
       var buildEnd = Instant.now();
@@ -515,15 +530,15 @@ public final class LuceneIndex {
     }
 
     @Override
-    public List<Integer> query(VectorFloat<?> vector, int k, boolean ensureIds) throws IOException {
+    public List<Integer> query(Object vectorObj, int k, boolean ensureIds) throws IOException {
+      float[] vector = (float[]) vectorObj;
       var numCandidates =
           switch (queryParams) {
             case HnswQueryParameters hnsw -> hnsw.numCandidates;
             case VamanaQueryParameters vamana -> vamana.numCandidates;
           };
-
-      // todo - .get() can be a possible bottleneck??
-      var query = new KnnVectorQuery(VECTOR_FIELD, (float[]) vector.get(), numCandidates);
+      
+      var query = new KnnVectorQuery(VECTOR_FIELD, vector, numCandidates);
       var results = this.searcher.search(query, numCandidates);
 //      System.out.println("results = " + results.scoreDocs[0]);
       var ids = new ArrayList<Integer>(k);
@@ -543,7 +558,6 @@ public final class LuceneIndex {
         ids.add(id);
       }
 
-//      System.out.println("ids = " + ids);
       return ids;
     }
 

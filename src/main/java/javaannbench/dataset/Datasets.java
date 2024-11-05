@@ -1,14 +1,16 @@
 package javaannbench.dataset;
 
-import io.jhdf.HdfFile;
 //import javaannbench.util.MMapRandomAccessVectorValues;
-import jvector.util.DataSet;
 import jvector.util.Hdf5Loader;
+import util.DataSetInterfaceVector;
+import util.DataSetHdf5;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+
+import static jvector.util.Hdf5Loader.getResult;
 
 public enum Datasets {
   COHERE_WIKI_22_12_EN_768(
@@ -47,7 +49,7 @@ public enum Datasets {
     this.similarityFunction = similarityFunction;
   }
 
-  public static DataSet load(Path datasetsPath, String name)
+  public static DataSetInterfaceVector load(String provider, Path datasetsPath, String name)
       throws IOException, InterruptedException {
 //      var description =
 //              switch (name) {
@@ -63,10 +65,17 @@ public enum Datasets {
 //                  case "sift-128-euclidean" -> SIFT_128;
 //                  default -> throw new RuntimeException("unknown dataset " + name);
 //              };
-      
-      
 
-      return Hdf5Loader.load("glove-100-angular.hdf5");
+      String fileName = name.endsWith(".hdf5") ? name : (name + ".hdf5");
+      DataSetHdf5 result = getResult(fileName);
+      if (provider.equals("lucene")) {
+          return Hdf5Loader.loadLucene(result);
+      } else if (provider.equals("jvector")) {
+          return Hdf5Loader.loadJvector(result);
+      } else {
+          throw new RuntimeException("ex");
+      }
+
 
 ////    S3.downloadAndExtract(datasetsPath, Path.of("datasets").resolve(name + Tarball.GZIPPED_FORMAT));
 ////    var datasetPath = datasetsPath.resolve(name);

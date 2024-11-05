@@ -2,10 +2,8 @@ package javaannbench.index;
 
 import io.github.jbellis.jvector.graph.disk.CachingGraphIndex;
 import io.github.jbellis.jvector.graph.disk.OnDiskGraphIndex;
-import io.github.jbellis.jvector.graph.similarity.ScoreFunction;
 import io.github.jbellis.jvector.pq.PQVectors;
 import io.github.jbellis.jvector.vector.types.VectorFloat;
-import javaannbench.dataset.Datasets;
 import javaannbench.display.ProgressBar;
 import javaannbench.util.Bytes;
 import javaannbench.util.Records;
@@ -16,7 +14,6 @@ import com.indeed.util.mmap.MMapBuffer;
 import io.github.jbellis.jvector.disk.RandomAccessReader;
 import io.github.jbellis.jvector.disk.ReaderSupplier;
 import io.github.jbellis.jvector.graph.GraphIndex;
-import io.github.jbellis.jvector.graph.GraphIndex.View;
 import io.github.jbellis.jvector.graph.GraphIndexBuilder;
 import io.github.jbellis.jvector.graph.GraphSearcher;
 import io.github.jbellis.jvector.graph.ListRandomAccessVectorValues;
@@ -31,7 +28,7 @@ import io.github.jbellis.jvector.pq.ProductQuantization;
 import io.github.jbellis.jvector.util.Bits;
 //import io.github.jbellis.jvector.vector.VectorEncoding;
 import io.github.jbellis.jvector.vector.VectorSimilarityFunction;
-import jvector.util.DataSet;
+import jvector.util.DataSetJVector;
 import jvector.util.MMapReader;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -41,7 +38,6 @@ import oshi.SystemInfo;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -52,7 +48,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ForkJoinPool;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -74,23 +69,19 @@ public class JVectorIndex {
     private final BuildParameters buildParams;
     private final int numThreads;
 
-    private Builder(
-        Path indexPath,
-        RandomAccessVectorValues vectors,
-        GraphIndexBuilder indexBuilder,
-        BuildParameters buildParams,
-        int numThreads) {
-      this.indexPath = indexPath;
-      this.vectors = vectors;
-      this.indexBuilder = indexBuilder;
-      this.buildParams = buildParams;
-      this.numThreads = numThreads;
-    }
+    public Builder(
+//        Path indexPath,
+//        RandomAccessVectorValues vectors,
+//        GraphIndexBuilder indexBuilder,
+//        BuildParameters buildParams,
+//        int numThreads) {
 
-    public static Index.Builder create(
+//    }
+
+//    public static Index.Builder create(
         Path indexesPath,
         RandomAccessVectorValues vectors,
-        Datasets.SimilarityFunction similarityFunction,
+        VectorSimilarityFunction vectorSimilarityFunction,
         Parameters parameters)
         throws IOException {
       Preconditions.checkArgument(
@@ -101,12 +92,12 @@ public class JVectorIndex {
       var buildParams =
           Records.fromMap(parameters.buildParameters(), BuildParameters.class, "build parameters");
 
-      var vectorSimilarityFunction =
-          switch (similarityFunction) {
-            case COSINE -> VectorSimilarityFunction.COSINE;
-            case DOT_PRODUCT -> VectorSimilarityFunction.DOT_PRODUCT;
-            case EUCLIDEAN -> VectorSimilarityFunction.EUCLIDEAN;
-          };
+//      var vectorSimilarityFunction =
+//          switch (similarityFunction) {
+//            case COSINE -> VectorSimilarityFunction.COSINE;
+//            case DOT_PRODUCT -> VectorSimilarityFunction.DOT_PRODUCT;
+//            case EUCLIDEAN -> VectorSimilarityFunction.EUCLIDEAN;
+//          };
 
       var indexBuilder =
           new GraphIndexBuilder(
@@ -127,7 +118,12 @@ public class JVectorIndex {
       var path = indexesPath.resolve(buildDescription(buildParams));
       Files.createDirectories(path);
 
-      return new JVectorIndex.Builder(path, vectors, indexBuilder, buildParams, numThreads);
+      this.indexPath = path;
+      this.vectors = vectors;
+      this.indexBuilder = indexBuilder;
+      this.buildParams = buildParams;
+      this.numThreads = numThreads;
+//      return new JVectorIndex.Builder(path, vectors, indexBuilder, buildParams, numThreads);
     }
 
     @Override
@@ -228,10 +224,10 @@ public class JVectorIndex {
     private final VectorSimilarityFunction similarityFunction;
     private final BuildParameters buildParams;
     private final QueryParameters queryParams;
-    private final DataSet dataSet;
+    private final DataSetJVector dataSet;
 
     public Querier(
-            DataSet dataSet,
+            DataSetJVector dataSet,
             ReaderSupplier readerSupplier,
         GraphIndex graph,
         Optional<CompressedVectors> compressedVectors,
@@ -248,9 +244,9 @@ public class JVectorIndex {
     }
 
     public static Index.Querier create(
-            DataSet queryVectors, 
+            DataSetJVector queryVectors, 
             Path indexesPath,
-            Datasets.SimilarityFunction similarityFunction,
+            VectorSimilarityFunction similarityFunction,
             int dimensions,
             Parameters parameters)
         throws IOException {
@@ -283,7 +279,7 @@ public class JVectorIndex {
       var cachingGraph = new CachingGraphIndex(onDiskGraph);
       var compressedVectors =
           compressedVectors(
-                  queryVectors.baseVectors,
+                  queryVectors.baseVectorsArray(),
               indexPath, dimensions, queryParams.pqFactor, cachingGraph, vectorSimilarityFunction);
 
       return new JVectorIndex.Querier(
@@ -297,7 +293,8 @@ public class JVectorIndex {
     }
 
     @Override
-    public List<Integer> query(VectorFloat<?> vector, int k, boolean ensureIds) throws IOException {
+    public List<Integer> query(Object vectorObj, int k, boolean ensureIds) throws IOException {
+      VectorFloat<?> vector = (VectorFloat<?>) vectorObj;
       var view = this.graph.getView();
 
 //      NeighborSimilarity.ExactScoreFunction scoreFunction =
