@@ -8,7 +8,7 @@ import io.jhdf.api.Dataset;
 import io.jhdf.object.datatype.FloatingPoint;
 import javaannbench.dataset.Datasets;
 import util.DataSetLucene;
-import util.DataSetVector;
+import util.DataSetHdf5;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -28,7 +28,7 @@ public class Hdf5Loader {
     private static final VectorTypeSupport vectorTypeSupport = VectorizationProvider.getInstance().getVectorTypeSupport();
 
 
-    public static DataSetLucene loadLucene(DataSetVector result) {
+    public static DataSetLucene loadLucene(DataSetHdf5 result) {
         return new DataSetLucene(
                 result.path().getFileName().toString(),
                 result.similarityFunction(),
@@ -38,7 +38,7 @@ public class Hdf5Loader {
         );
     }
     
-    public static DataSetJVector loadJvector(DataSetVector result) {
+    public static DataSetJVector loadJvector(DataSetHdf5 result) {
         // infer the similarity
         
 
@@ -64,7 +64,7 @@ public class Hdf5Loader {
                 gtSets);
     }
 
-    public static DataSetVector getResult(String filename) {
+    public static DataSetHdf5 getResult(String filename) {
         Datasets.SimilarityFunction similarityFunction;
         if (filename.contains("-angular") || filename.contains("-dot")) {
             similarityFunction = Datasets.SimilarityFunction.COSINE;
@@ -85,6 +85,10 @@ public class Hdf5Loader {
         try (HdfFile hdf = new HdfFile(path)) {
             groundTruth = (int[][]) hdf.getDatasetByPath("neighbors").getData();
             
+            // -- Dataset datasetByPath = hdf.getDatasetByPath("train");
+            //int[] trains = datasetByPath.getDimensions();
+            // todo
+            //datasetByPath.getData(new long[] {0,0}, new int[] {1,1})
             baseVectorsArray =
                     (float[][]) hdf.getDatasetByPath("train").getData();
             Dataset queryDataset = hdf.getDatasetByPath("test");
@@ -104,7 +108,6 @@ public class Hdf5Loader {
                 queryVectorsArray = (float[][]) queryDataset.getData();
             }
         }
-        DataSetVector result = new DataSetVector(similarityFunction, baseVectorsArray, queryVectorsArray, groundTruth, path);
-        return result;
+        return new DataSetHdf5(similarityFunction, baseVectorsArray, queryVectorsArray, groundTruth, path);
     }
 }

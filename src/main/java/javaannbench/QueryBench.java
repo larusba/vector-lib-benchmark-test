@@ -1,14 +1,13 @@
 package javaannbench;
 
-import io.github.jbellis.jvector.vector.types.VectorFloat;
 import javaannbench.display.ProgressBar;
 import javaannbench.index.Index;
+import javaannbench.util.Config;
 import javaannbench.util.Exceptions;
 import com.google.common.base.Preconditions;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.hotspot.DefaultExports;
-import javaannbench.dataset.Datasets;
 import jdk.jfr.Configuration;
 import jdk.jfr.Recording;
 import jvector.util.DataSetJVector;
@@ -58,7 +57,7 @@ public class QueryBench {
   private static final int DEFAULT_BLOCK_DEVICE_STATS_INTERVAL_MS = 10;
 
   
-  public static void test(QuerySpec spec, Path datasetsPath, Path indexesPath, Path reportsPath)
+  public static void test(Config.QuerySpec spec, Path datasetsPath, Path indexesPath, Path reportsPath)
       throws Exception {
     var dataset = javaannbench.dataset.Datasets.load(spec.provider(), datasetsPath, spec.dataset());
     try (var index =
@@ -78,14 +77,13 @@ public class QueryBench {
       var threadStats = threadStats(spec.runtime());
       var random = random(spec.runtime());
       var numQueries = testOnTrain ? trainTestQueries : getSize(dataset);
-      var queries = new ArrayList<VectorFloat<?>>(numQueries);
+      var queries = new ArrayList(numQueries);
 
       Preconditions.checkArgument(!(testOnTrain && recall));
       try (var prom = startPromServer(spec, numQueries * test)) {
 
         for (int i = 0; i < numQueries; i++) {
-          VectorFloat<?> vectorFloat =
-                  getVectorFloat(testOnTrain, dataset, random, i);
+          Object vectorFloat = getVectorFloat(testOnTrain, dataset, random, i);
           queries.add(vectorFloat);
         }
 
@@ -226,7 +224,10 @@ public class QueryBench {
         if (recall && !testOnTrain) {
           System.out.println("\taverage recall {}" +  recalls.getMean());
         }
-        System.out.println("\taverage duration {}" +  Duration.ofNanos((long) executionDurations.getMean()));
+        System.out.println("\taverage duration in ns {}" +  executionDurations.getMean());
+        // TODO - executionDurations.getSum() / (double) TimeUnit.MILLISECONDS.toNanos(1) <-- seconds??
+        System.out.println("\ttotal duration in ns {}" +  executionDurations.getSum());
+        
         if (threadStats && !testOnTrain) {
           System.out.println("\taverage minor faults {}" +  minorFaults.getMean());
           System.out.println("\taverage major faults {}" +  majorFaults.getMean());
@@ -367,11 +368,13 @@ public class QueryBench {
       List<? extends Set<Integer>> groundTruth1 = (List<? extends Set<Integer>>) groundTruth;
       return groundTruth1.stream();
     }
-    int[][] groundTruth1 = (int[][]) groundTruth;
-    return Arrays.stream(groundTruth1);
+    int[] groundTruth1 = (int[]) groundTruth;
+    
+    // todo - check it..
+    return Arrays.stream(groundTruth1).boxed();
   }
 
-  private static Prom startPromServer(QuerySpec spec, int numQueries) throws Exception {
+  private static Prom startPromServer(Config.QuerySpec spec, int numQueries) throws Exception {
     DefaultExports.initialize();
 
     Map<String, String> labels = new HashMap<>();
@@ -544,7 +547,7 @@ public class QueryBench {
   // FIXME: record full fidelity results, as well as some quantiles
   private record Report(
       String indexDescription,
-      QuerySpec spec,
+      Config.QuerySpec spec,
       DescriptiveStatistics recall,
       DescriptiveStatistics executionDurations,
       DescriptiveStatistics minorFaults,

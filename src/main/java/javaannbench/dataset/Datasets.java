@@ -3,7 +3,7 @@ package javaannbench.dataset;
 //import javaannbench.util.MMapRandomAccessVectorValues;
 import jvector.util.Hdf5Loader;
 import util.DataSetInterfaceVector;
-import util.DataSetVector;
+import util.DataSetHdf5;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -66,8 +66,8 @@ public enum Datasets {
 //                  default -> throw new RuntimeException("unknown dataset " + name);
 //              };
 
-      String fileName = "glove-100-angular.hdf5";
-      DataSetVector result = getResult(fileName);
+      String fileName = name.endsWith(".hdf5") ? name : (name + ".hdf5");
+      DataSetHdf5 result = getResult(fileName);
       if (provider.equals("lucene")) {
           return Hdf5Loader.loadLucene(result);
       } else if (provider.equals("jvector")) {

@@ -2,6 +2,7 @@ package lucene;
 
 import io.jhdf.HdfFile;
 import io.jhdf.api.Dataset;
+import javaannbench.display.ProgressBar;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.lucene.codecs.KnnVectorsFormat;
@@ -79,7 +80,7 @@ public class LuceneHnswGraphTest {
     private static float[] query = getQuery();
     private static final int TOPK = 10;
 
-    private static final Path indexPath = Paths.get("index-lucene-45");
+    private static final Path indexPath = Paths.get("indexlucene/12");
 //    private static final Path indexPath = Paths.get("index-kevin/idx");
     private static final VectorSimilarityFunction similarityFunction = VectorSimilarityFunction.EUCLIDEAN;
     private static final int maxConn = 14;
@@ -253,27 +254,35 @@ public class LuceneHnswGraphTest {
                                 return new Lucene90HnswVectorsFormat(maxConn, beamWidth);
                             }
                         });
-        try (IndexWriter iw = new IndexWriter(dir, iwc)) {
-            while (vectorProvider.nextDoc() != NO_MORE_DOCS) {
-                while (indexedDoc < vectorProvider.docID()) {
-                    // increment docId in the index by adding empty documents
-                    iw.addDocument(new Document());
+
+        int size = vectorProvider.size();
+        System.out.println("size = " + size);
+        try (var progress = ProgressBar.create("building", size)) {
+
+            try (IndexWriter iw = new IndexWriter(dir, iwc)) {
+                while (vectorProvider.nextDoc() != NO_MORE_DOCS) {
+                    while (indexedDoc < vectorProvider.docID()) {
+                        // increment docId in the index by adding empty documents
+                        iw.addDocument(new Document());
+                        indexedDoc++;
+                    }
+                    Document doc = new Document();
+                    // System.out.println("Got: " + v2.vectorValue()[0] + ":" + v2.vectorValue()[1] + "@" + v2.docID());
+                    doc.add(new KnnVectorField("field", vectorProvider.vectorValue(), similarityFunction));
+                    doc.add(new StoredField("id", vectorProvider.docID()));
+                    iw.addDocument(doc);
                     indexedDoc++;
+                    progress.inc();
                 }
-                Document doc = new Document();
-                // System.out.println("Got: " + v2.vectorValue()[0] + ":" + v2.vectorValue()[1] + "@" + v2.docID());
-                doc.add(new KnnVectorField("field", vectorProvider.vectorValue(), similarityFunction));
-                doc.add(new StoredField("id", vectorProvider.docID()));
-                iw.addDocument(doc);
-                indexedDoc++;
             }
-        }
 //        Instant finish = Instant.now();
 //        System.out.println("writeIndex elapsed time = " + trackTimeElapsed(start, finish) + "ms");
-        Instant finish = Instant.now();
-        long timeElapsed = Duration.between(start, finish).toMillis();
-        System.out.println("writeIndex elapsed time = " + timeElapsed + "ms");
-        return indexedDoc;
+            Instant finish = Instant.now();
+            long timeElapsed = Duration.between(start, finish).toMillis();
+            System.out.println("writeIndex elapsed time = " + timeElapsed + "ms");
+            return indexedDoc;
+
+        }
     }
 
     private TopDocs doKnnSearch(

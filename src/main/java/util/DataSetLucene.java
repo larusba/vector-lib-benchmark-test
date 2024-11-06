@@ -58,5 +58,4 @@ public class DataSetLucene implements DataSetInterfaceVector<
         return baseVectors.dimension();
     }
 
-
 }

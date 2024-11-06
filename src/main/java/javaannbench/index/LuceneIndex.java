@@ -46,6 +46,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 public final class LuceneIndex {
   private static final Logger LOGGER = LoggerFactory.getLogger(LuceneIndex.class);
 
@@ -145,6 +147,8 @@ public final class LuceneIndex {
             case DOT_PRODUCT -> VectorSimilarityFunction.DOT_PRODUCT;
             case EUCLIDEAN -> VectorSimilarityFunction.EUCLIDEAN;
           };
+
+      System.out.println("similarity = " + similarity);
 
       var description = buildDescription(provider, buildParams);
       var path = indexesPath.resolve(description);
@@ -356,37 +360,57 @@ public final class LuceneIndex {
       
 //      try (var pool = new ForkJoinPool(numThreads)) {
         try (var progress = ProgressBar.create("building", size)) {
+
+
+          while (vectors.nextDoc() != NO_MORE_DOCS) {
+            while (indexedDoc < vectors.docID()) {
+              // increment docId in the index by adding empty documents
+              writer.addDocument(new Document());
+              indexedDoc++;
+            }
+            Document doc = new Document();
+            // System.out.println("Got: " + v2.vectorValue()[0] + ":" + v2.vectorValue()[1] + "@" + v2.docID());
+            doc.add(new KnnVectorField("field", vectors.vectorValue(), similarityFunction));
+            doc.add(new StoredField("id", vectors.docID()));
+            writer.addDocument(doc);
+            indexedDoc++;
+            progress.inc();
+          }
+          
+          
 //          pool.submit(
 //                  () -> {
 //      for (int i = 0; i < size; i++) {
         
       
-                    IntStream.range(0, size)
-                        .parallel()
-                        .forEach(
-                            i -> {
-                              Exceptions.wrap(
-                                  () -> {
-                                    var doc = new Document();
-                                    doc.add(new StoredField(ID_FIELD, i));
-                                    doc.add(
-                                        new KnnVectorField(
-                                            VECTOR_FIELD,
-                                            // todo - change it???
-                                                (float[]) this.vectors.vectorValue(i),
-                                            this.similarityFunction));
-                                try {
-                                    this.writer.addDocument(doc);
-                                } catch (IOException e) {
-                                  System.out.println("e = " + e);
-                                    throw new RuntimeException(e);
-                                }
-                                  });
-                              progress.inc();
-//                            });
-                  });
+//                    IntStream.range(0, size)
+//                        .parallel()
+//                        .forEach(
+//                            i -> {
+//                              Exceptions.wrap(
+//                                  () -> {
+//                                    var doc = new Document();
+//                                    doc.add(new StoredField(ID_FIELD, i));
+//                                    doc.add(
+//                                        new KnnVectorField(
+//                                            VECTOR_FIELD,
+//                                            // todo - change it???
+//                                                (float[]) this.vectors.vectorValue(i),
+//                                            this.similarityFunction));
+//                                try {
+//                                    this.writer.addDocument(doc);
+//                                } catch (IOException e) {
+//                                  System.out.println("e = " + e);
+//                                    throw new RuntimeException(e);
+//                                }
+//                                  });
+//                              progress.inc();
+////                            });
+//                  });
 //              .join();
 //        }
+          
+          progress.close();
       }
 
 //      }
@@ -507,15 +531,14 @@ public final class LuceneIndex {
 
     @Override
     public List<Integer> query(Object vectorObj, int k, boolean ensureIds) throws IOException {
-      VectorFloat<?> vector = (VectorFloat<?>) vectorObj;
+      float[] vector = (float[]) vectorObj;
       var numCandidates =
           switch (queryParams) {
             case HnswQueryParameters hnsw -> hnsw.numCandidates;
             case VamanaQueryParameters vamana -> vamana.numCandidates;
           };
-
-      // todo - .get() can be a possible bottleneck??
-      var query = new KnnVectorQuery(VECTOR_FIELD, (float[]) vector.get(), numCandidates);
+      
+      var query = new KnnVectorQuery(VECTOR_FIELD, vector, numCandidates);
       var results = this.searcher.search(query, numCandidates);
 //      System.out.println("results = " + results.scoreDocs[0]);
       var ids = new ArrayList<Integer>(k);
@@ -535,7 +558,6 @@ public final class LuceneIndex {
         ids.add(id);
       }
 
-//      System.out.println("ids = " + ids);
       return ids;
     }
 

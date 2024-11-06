@@ -9,6 +9,7 @@ import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
@@ -21,6 +22,13 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 
 public class TestUtil {
+    
+    public static Path workingDirectory = Path.of(System.getProperty("user.dir"));
+    public static Path datasetPath = workingDirectory.resolve("datasets");
+    public static Path indexesPath = workingDirectory.resolve("indexes");
+    public static Path reportsPath = workingDirectory.resolve("reports");
+    
+    
     public static final String DATASET_FOLDER = "hdf5/";
     public static final String FILE_EXT = ".txt";
     public static final String STATS_DIR = "stats/";

@@ -1,5 +1,6 @@
 package javaannbench;
 
+import javaannbench.util.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -15,11 +16,11 @@ public class BenchRunner implements Runnable {
 
 //  @Option(names = {"-b", "--build"})
 //  private boolean build = true;
-  private boolean build = true;
+  private boolean build = false;
 
 //  @Option(names = {"-q", "--query"})
 //  private boolean query;// = true;
-  private boolean query = false;
+  private boolean query = true;
 //  private boolean query = false;
 
 //  @Option(names = {"-c", "--config"})
@@ -61,12 +62,12 @@ public class BenchRunner implements Runnable {
     var reportsPath = workingDirectory.resolve("reports");
 
     if (this.build) {
-      BuildBench.build(BuildSpec.load(Path.of(this.config)), datasetPath, indexesPath, reportsPath);
+      BuildBench.build(Config.BuildSpec.load(this.config), datasetPath, indexesPath, reportsPath);
     }
 
     System.out.println("BenchRunner.throwableRun");
     if (this.query) {
-      QueryBench.test(QuerySpec.load(Path.of(this.config)), datasetPath, indexesPath, reportsPath);
+      QueryBench.test(Config.QuerySpec.load(this.config), datasetPath, indexesPath, reportsPath);
     }
   }
 }

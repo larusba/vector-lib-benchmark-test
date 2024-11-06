@@ -4,6 +4,7 @@ import javaannbench.dataset.Datasets;
 import javaannbench.index.Index;
 import javaannbench.index.Index.Builder.BuildPhase;
 import javaannbench.util.Bytes;
+import javaannbench.util.Config;
 import jdk.jfr.Configuration;
 import jdk.jfr.Recording;
 import org.apache.commons.csv.CSVFormat;
@@ -25,7 +26,7 @@ public class BuildBench {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BuildBench.class);
 
-  public static void build(BuildSpec spec, Path datasetPath, Path indexesPath, Path reportsPath)
+  public static void build(Config.BuildSpec spec, Path datasetPath, Path indexesPath, Path reportsPath)
       throws Exception {
     var dataset = Datasets.load(spec.provider(), datasetPath, spec.dataset());
     var jfr =
@@ -79,7 +80,7 @@ public class BuildBench {
 
   private record Report(
       String indexDescription,
-      BuildSpec spec,
+      Config.BuildSpec spec,
       Duration total,
       List<BuildPhase> phases,
       Bytes size) {
