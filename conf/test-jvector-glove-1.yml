@@ -6,8 +6,9 @@ runtime:
 build:
   beamWidth: 100
   M: 1
-  neighborOverflow: 0.1
-  alpha: 0.2
+  neighborOverflow: 0.61
+  alpha: 0.8
 query:
-  numCandidates: 1
-  pqFactor: 20
+  numCandidates: 5
+  pqFactor: 15
+k: 10

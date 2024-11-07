@@ -420,7 +420,7 @@ public class JVectorIndex {
 //    }
 
     private static Optional<CompressedVectors> compressedVectors(
-            List<VectorFloat<?>> baseVectors, 
+            List<VectorFloat<?>> baseVectors,
             Path indexPath,
             int dimensions,
             int pqFactor,

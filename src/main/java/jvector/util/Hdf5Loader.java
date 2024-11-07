@@ -83,14 +83,37 @@ public class Hdf5Loader {
 
         Path path = Path.of(HDF5_DIR).resolve(filename);
         try (HdfFile hdf = new HdfFile(path)) {
-            groundTruth = (int[][]) hdf.getDatasetByPath("neighbors").getData();
+            groundTruth = (int[][]) hdf
+                    .getDatasetByPath("neighbors")
+                    .getData()
+            ;
             
             // -- Dataset datasetByPath = hdf.getDatasetByPath("train");
             //int[] trains = datasetByPath.getDimensions();
             // todo
             //datasetByPath.getData(new long[] {0,0}, new int[] {1,1})
-            baseVectorsArray =
-                    (float[][]) hdf.getDatasetByPath("train").getData();
+//            baseVectorsArray = (float[][]) hdf
+//                    .getDatasetByPath("train")
+//                    .getData()
+//            ;
+            var dataset = hdf.getDatasetByPath("train");
+            int[] dimensions = dataset.getDimensions();
+            int batchSize = 100000; // Adjust batch size as needed
+            baseVectorsArray = new float[dimensions[0]][dimensions[1]];
+            for (int i = 0; i < dimensions[0]; i += batchSize) {
+                long[] start = {i, 0}; // Start position for batch read
+                int[] blockSize = {Math.min(batchSize, dimensions[0] - i), dimensions[1]}; // Block size for batch
+
+                // Read a batch slice of the dataset
+                float[][] batchData = (float[][]) dataset.getData(start, blockSize);
+                System.arraycopy(batchData, 0, baseVectorsArray, i, batchData.length);
+                // Process batchData as needed
+                System.out.println("Read batch starting at row " + i);
+            }
+
+
+
+
             Dataset queryDataset = hdf.getDatasetByPath("test");
             if (((FloatingPoint) queryDataset.getDataType()).getBitPrecision() == 64) {
                 // lastfm dataset contains f64 queries but f32 everything else

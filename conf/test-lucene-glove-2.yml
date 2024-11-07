@@ -6,9 +6,10 @@ runtime:
   testOnTrain: false
 build:
   maxConn: 14
-  beamWidth: 5
+  beamWidth: 88
   scalarQuantization: false
   numThreads: 5
   forceMerge: false
 query:
-  numCandidates: 10
+  numCandidates: 9
+k: 10

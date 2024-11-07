@@ -11,6 +11,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.StatsUtil;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,12 +58,13 @@ public class BuildBench {
       var totalTime =
           summary.phases().stream().map(BuildPhase::duration).reduce(Duration.ZERO, Duration::plus);
 
+      StatsUtil.appendToBuildCsv(STR."\{spec.provider()}-\{spec.dataset()}", index.description(), summary, String.valueOf(index.size()));
       System.out.println("completed building index for " + index.description());
-//      summary
-//          .phases()
-//          .forEach(phase -> System.out.println("\t{} phase: {}" +  phase.description() + phase.duration()));
-//      System.out.println("\ttotal time seconds and nanos: {}" +  totalTime.getSeconds() + " - " + totalTime.getNano());
-//      System.out.println("\tsize: {}" +  index.size());
+      summary
+          .phases()
+          .forEach(phase -> System.out.println("\t{} phase: {}" +  phase.description() + phase.duration()));
+      System.out.println("\ttotal time seconds and nanos: {}" +  totalTime.getSeconds() + " - " + totalTime.getNano());
+      System.out.println("\tsize: {}" +  index.size());
 
 //      new Report(index.description(), spec, totalTime, summary.phases(), index.size())
 //          .write(reportsPath);

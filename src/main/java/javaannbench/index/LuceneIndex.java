@@ -22,18 +22,16 @@ import org.apache.lucene.document.Document;
 //import org.apache.lucene.document.KnnFloatVectorField;
 import org.apache.lucene.document.KnnVectorField;
 import org.apache.lucene.document.StoredField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.VectorSimilarityFunction;
+import org.apache.lucene.index.*;
 import org.apache.lucene.search.IndexSearcher;
 //import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.KnnVectorQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.LuceneUtil;
 import utils.CustomVectorProvider;
 
 import java.io.IOException;
@@ -532,33 +530,37 @@ public final class LuceneIndex {
     @Override
     public List<Integer> query(Object vectorObj, int k, boolean ensureIds) throws IOException {
       float[] vector = (float[]) vectorObj;
-      var numCandidates =
-          switch (queryParams) {
-            case HnswQueryParameters hnsw -> hnsw.numCandidates;
-            case VamanaQueryParameters vamana -> vamana.numCandidates;
-          };
+//      var numCandidates =
+//          switch (queryParams) {
+//            case HnswQueryParameters hnsw -> hnsw.numCandidates;
+//            case VamanaQueryParameters vamana -> vamana.numCandidates;
+//          };
       
-      var query = new KnnVectorQuery(VECTOR_FIELD, vector, numCandidates);
-      var results = this.searcher.search(query, numCandidates);
-//      System.out.println("results = " + results.scoreDocs[0]);
+//      var query = new KnnVectorQuery(VECTOR_FIELD, vector, numCandidates);
       var ids = new ArrayList<Integer>(k);
+//      var results = this.searcher.search(query, numCandidates);
+      for (LeafReaderContext ctx : reader.leaves()) {
+        TopDocs results = LuceneUtil.doKnnSearch(ctx.reader(), "field", vector, k, 1);
 
-      for (int i = 0; i < k; i++) {
-        var result = results.scoreDocs[i];
-        var id =
-// TODO           ensureIds 
+        for (int i = 0; i < k; i++) {
+          var result = results.scoreDocs[i];
+          var id =
+// TODO           ensureIds
 //                ? this.searcher
 //                    .storedFields()
 //                    .document(result.doc)
 //                    .getField(ID_FIELD)
 //                    .numericValue()
 //                    .intValue()
-//                : 
-        result.doc;
-        ids.add(id);
+//                :
+                  result.doc;
+          ids.add(id);
+        }
       }
+//      System.out.println("results = " + results.scoreDocs[0]);
 
-      return ids;
+
+      return ids.stream().limit(k).toList();
     }
 
     @Override

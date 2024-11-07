@@ -1,5 +1,6 @@
 package javaannbench;
 
+import io.prometheus.client.CollectorRegistry;
 import javaannbench.display.ProgressBar;
 import javaannbench.index.Index;
 import javaannbench.util.Config;
@@ -22,6 +23,7 @@ import oshi.software.os.OSProcess;
 import oshi.software.os.OSThread;
 import util.DataSetInterfaceVector;
 import util.DataSetLucene;
+import util.StatsUtil;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -31,15 +33,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -60,9 +54,10 @@ public class QueryBench {
   public static void test(Config.QuerySpec spec, Path datasetsPath, Path indexesPath, Path reportsPath)
       throws Exception {
     var dataset = javaannbench.dataset.Datasets.load(spec.provider(), datasetsPath, spec.dataset());
-    try (var index =
-        Index.Querier.fromParameters(
-            dataset, indexesPath, spec.provider(), spec.type(), spec.build(), spec.query())) {
+    try (
+            var index = Index.Querier
+                    .fromParameters(dataset, indexesPath, spec.provider(), spec.type(), spec.build(), spec.query())
+    ) {
 
       var queryThreads = queryThreads(spec.runtime());
       var concurrent = queryThreads != 1;
@@ -74,6 +69,7 @@ public class QueryBench {
       var k = spec.k();
       var jfr = jfr(spec.runtime());
       var recall = recall(spec.runtime());
+      var recallWar = recall(spec.runtime());
       var threadStats = threadStats(spec.runtime());
       var random = random(spec.runtime());
       var numQueries = testOnTrain ? trainTestQueries : getSize(dataset);
@@ -108,7 +104,7 @@ public class QueryBench {
                                             Exceptions.wrap(
                                                 () -> {
                                                   var query = queries.get(j);
-                                                  index.query(query, k, recall);
+                                                  index.query(query, k, recallWar);
                                                   progress.inc();
                                                 });
                                           });
@@ -219,10 +215,18 @@ public class QueryBench {
           }
         }
 
+        StatsUtil.appendToQueryCsv(
+                STR."\{spec.provider()}-\{spec.dataset()}",
+                index.description(), recalls, testOnTrain,
+                recall, executionDurations, minorFaults,
+                majorFaults, threadStats
+        );
+
         System.out.println("completed recall test for {}:" + index.description());
         System.out.println("\ttotal queries {}" +  recalls.getN());
         if (recall && !testOnTrain) {
           System.out.println("\taverage recall {}" +  recalls.getMean());
+          System.out.println("\trecall {}" +  recalls.getMean()*recalls.getN());
         }
         System.out.println("\taverage duration in ns {}" +  executionDurations.getMean());
         // TODO - executionDurations.getSum() / (double) TimeUnit.MILLISECONDS.toNanos(1) <-- seconds??
@@ -349,7 +353,7 @@ public class QueryBench {
           results.size(),
           k);
 
-      var truePositives = getStream(groundTruth).limit(k).filter(results::contains).count();
+      var truePositives = getStream(groundTruth).filter(results::contains).count();
       var recall = (double) truePositives / k;
       recalls.addValue(recall);
     }
@@ -364,9 +368,9 @@ public class QueryBench {
   }
 
   private static <V> Stream getStream(V groundTruth) {
-    if (groundTruth instanceof List) {
-      List<? extends Set<Integer>> groundTruth1 = (List<? extends Set<Integer>>) groundTruth;
-      return groundTruth1.stream();
+    if (groundTruth instanceof Collection<?> set) {
+//      List<? extends Set<Integer>> groundTruth1 = (List<? extends Set<Integer>>) groundTruth;
+      return set.stream();
     }
     int[] groundTruth1 = (int[]) groundTruth;
     
@@ -428,6 +432,7 @@ public class QueryBench {
     @Override
     public void close() throws IOException {
       server.close();
+      CollectorRegistry.defaultRegistry.clear();
     }
   }
 

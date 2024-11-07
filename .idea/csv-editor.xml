@@ -3,21 +3,28 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
-        <entry key="/results.csv">
+        <entry key="/stats/build-gist-960-euclidean.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
             </Attribute>
           </value>
         </entry>
-        <entry key="/stats/lucene-hnsw-results.csv">
+        <entry key="/stats/build-glove-100-angular.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
             </Attribute>
           </value>
         </entry>
-        <entry key="/stats/results.csv">
+        <entry key="/stats/query-gist-960-euclidean.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/stats/query-glove-100-angular.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />

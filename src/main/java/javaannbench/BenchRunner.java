@@ -25,7 +25,7 @@ public class BenchRunner implements Runnable {
 
 //  @Option(names = {"-c", "--config"})
 //  private String config;// = "test.yml";
-  private String config = "test-lucene.yml";
+  private String config = "test-lucene-glove.yml";
 //  private String config = "prova.yml";
 //  private String config = "prova-jvector.yml";
 
