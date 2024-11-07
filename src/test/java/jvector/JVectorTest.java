@@ -51,7 +51,7 @@ class JVectorTest {
     void testJVectorBuild() {
         QUERY_SPEC_LOAD.stream()
                 .map(spec -> STR."\{spec.provider()}-\{spec.dataset()}")
-                .forEach(StatsUtil::initQueryStatsCsv);
+                .forEach(StatsUtil::initBuildStatsCsv);
 
         BUILD_SPEC_LOAD.forEach(
                 load -> Assertions.assertDoesNotThrow(
