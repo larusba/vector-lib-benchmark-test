@@ -9,24 +9,17 @@ import javaannbench.util.Bytes;
 import javaannbench.util.Records;
 import com.google.common.base.Preconditions;
 import com.indeed.util.mmap.MMapBuffer;
-//import io.github.jbellis.jvector.disk.CachingGraphIndex;
-//import io.github.jbellis.jvector.disk.OnDiskGraphIndex;
 import io.github.jbellis.jvector.disk.RandomAccessReader;
 import io.github.jbellis.jvector.disk.ReaderSupplier;
 import io.github.jbellis.jvector.graph.GraphIndex;
 import io.github.jbellis.jvector.graph.GraphIndexBuilder;
 import io.github.jbellis.jvector.graph.GraphSearcher;
 import io.github.jbellis.jvector.graph.ListRandomAccessVectorValues;
-//import io.github.jbellis.jvector.graph.NeighborSimilarity;
-//import io.github.jbellis.jvector.graph.NeighborSimilarity.ExactScoreFunction;
-//import io.github.jbellis.jvector.graph.NeighborSimilarity.ReRanker;
-//import io.github.jbellis.jvector.graph.NeighborSimilarity.ScoreFunction;
 import io.github.jbellis.jvector.graph.RandomAccessVectorValues;
 import io.github.jbellis.jvector.graph.SearchResult;
 import io.github.jbellis.jvector.pq.CompressedVectors;
 import io.github.jbellis.jvector.pq.ProductQuantization;
 import io.github.jbellis.jvector.util.Bits;
-//import io.github.jbellis.jvector.vector.VectorEncoding;
 import io.github.jbellis.jvector.vector.VectorSimilarityFunction;
 import jvector.util.DataSetJVector;
 import jvector.util.MMapReader;
@@ -354,71 +347,6 @@ public class JVectorIndex {
           queryParams.pqFactor);
     }
 
-//    private record QuerySimilarity(ScoreFunction scoreFunction, ReRanker<float[]> reRanker) {}
-//
-//    private QuerySimilarity querySimilarity(float[] vector, View<float[]> view) {
-//      if (this.compressedVectors.isEmpty()) {
-//        return new QuerySimilarity(
-//            (ExactScoreFunction) (i -> this.similarityFunction.compare(vector, view.getVector(i))),
-//            null);
-//      }
-//
-//      return new QuerySimilarity(
-//          compressedVectors.get().approximateScoreFunctionFor(vector, this.similarityFunction),
-//          (i, vectors) -> this.similarityFunction.compare(vector, vectors.get(i)));
-//    }
-
-//    private static RandomAccessVectorValues graphViewVectors(
-//        View view, int dimensions) {
-//      
-//      return new RandomAccessVectorValues() {
-//        @Override
-//        public int size() {
-//          return view.size();
-//        }
-//
-//        @Override
-//        public int dimension() {
-//          return dimensions;
-//        }
-//
-////        @Override
-////        public VectorFloat<?> getVector(int i) {
-////          return get;
-////        }
-//
-//        @Override
-//        public VectorFloat<?> vectorValue(int i) {
-//          return getVector(i);
-//        }
-//
-//        @Override
-//        public void getVectorInto(int node, VectorFloat<?> destinationVector, int offset) {
-//          RandomAccessVectorValues.super.getVectorInto(node, destinationVector, offset);
-//        }
-//
-//        @Override
-//        public boolean isValueShared() {
-//          return false;
-//        }
-//
-//        @Override
-//        public RandomAccessVectorValues copy() {
-//          return this;
-//        }
-//
-//        @Override
-//        public Supplier<RandomAccessVectorValues> threadLocalSupplier() {
-//          return RandomAccessVectorValues.super.threadLocalSupplier();
-//        }
-//
-//        @Override
-//        public ScoreFunction.ExactScoreFunction rerankerFor(VectorFloat<?> queryVector, VectorSimilarityFunction vsf) {
-//          return RandomAccessVectorValues.super.rerankerFor(queryVector, vsf);
-//        }
-//      };
-//    }
-
     private static Optional<CompressedVectors> compressedVectors(
             List<VectorFloat<?>> baseVectors,
             Path indexPath,
@@ -519,67 +447,4 @@ public class JVectorIndex {
       buffer.close();
     }
   }
-
-//  private static class MMapReader implements RandomAccessReader {
-//    private final MMapBuffer buffer;
-//    private long position;
-//    private byte[] floatsScratch = new byte[0];
-//    private byte[] intsScratch = new byte[0];
-//
-//    MMapReader(MMapBuffer buffer) {
-//      this.buffer = buffer;
-//    }
-//
-//    @Override
-//    public void seek(long offset) {
-//      position = offset;
-//    }
-//
-//    public int readInt() {
-//      try {
-//        return buffer.memory().getInt(position);
-//      } finally {
-//        position += Integer.BYTES;
-//      }
-//    }
-//
-//    public void readFully(byte[] bytes) {
-//      read(bytes, 0, bytes.length);
-//    }
-//
-//    private void read(byte[] bytes, int offset, int count) {
-//      try {
-//        buffer.memory().getBytes(position, bytes, offset, count);
-//      } finally {
-//        position += count;
-//      }
-//    }
-//
-//    @Override
-//    public void readFully(float[] floats) {
-//      int bytesToRead = floats.length * Float.BYTES;
-//      if (floatsScratch.length < bytesToRead) {
-//        floatsScratch = new byte[bytesToRead];
-//      }
-//      read(floatsScratch, 0, bytesToRead);
-//      ByteBuffer byteBuffer = ByteBuffer.wrap(floatsScratch).order(ByteOrder.BIG_ENDIAN);
-//      byteBuffer.asFloatBuffer().get(floats);
-//    }
-//
-//    @Override
-//    public void read(int[] ints, int offset, int count) {
-//      int bytesToRead = (count - offset) * Integer.BYTES;
-//      if (intsScratch.length < bytesToRead) {
-//        intsScratch = new byte[bytesToRead];
-//      }
-//      read(intsScratch, 0, bytesToRead);
-//      ByteBuffer byteBuffer = ByteBuffer.wrap(intsScratch).order(ByteOrder.BIG_ENDIAN);
-//      byteBuffer.asIntBuffer().get(ints, offset, count);
-//    }
-//
-//    @Override
-//    public void close() {
-//      // don't close buffer, let the Supplier handle that
-//    }
-//  }
 }

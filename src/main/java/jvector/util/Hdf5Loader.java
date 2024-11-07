@@ -21,7 +21,8 @@ import java.util.stream.IntStream;
  * Taken from https://github.com/jbellis/jvector/blob/main/jvector-examples/src/main/java/io/github/jbellis/jvector/example/util/Hdf5Loader.java
  * 
  * Just changed {@link io.github.jbellis.jvector.vector.VectorSimilarityFunction}  to  {@link Datasets.SimilarityFunction},
- *  * in order to be agnostic and handle Lucene Index as well
+ * in order to be agnostic and handle Lucene Index as well,
+ * and returned a dataset specific for Lucene and JVector 
  */
 public class Hdf5Loader {
     public static final String HDF5_DIR = "hdf5/";
@@ -65,16 +66,7 @@ public class Hdf5Loader {
     }
 
     public static DataSetHdf5 getResult(String filename) {
-        Datasets.SimilarityFunction similarityFunction;
-        if (filename.contains("-angular") || filename.contains("-dot")) {
-            similarityFunction = Datasets.SimilarityFunction.COSINE;
-        }
-        else if (filename.contains("-euclidean")) {
-            similarityFunction = Datasets.SimilarityFunction.EUCLIDEAN;
-        }
-        else {
-            throw new IllegalArgumentException("Unknown similarity function -- expected angular or euclidean for " + filename);
-        }
+        Datasets.SimilarityFunction similarityFunction = getSimilarityFunction(filename);
 
         // read the data
         float[][] baseVectorsArray;
@@ -87,15 +79,7 @@ public class Hdf5Loader {
                     .getDatasetByPath("neighbors")
                     .getData()
             ;
-            
-            // -- Dataset datasetByPath = hdf.getDatasetByPath("train");
-            //int[] trains = datasetByPath.getDimensions();
-            // todo
-            //datasetByPath.getData(new long[] {0,0}, new int[] {1,1})
-//            baseVectorsArray = (float[][]) hdf
-//                    .getDatasetByPath("train")
-//                    .getData()
-//            ;
+
             var dataset = hdf.getDatasetByPath("train");
             int[] dimensions = dataset.getDimensions();
             int batchSize = 100000; // Adjust batch size as needed
@@ -124,13 +108,23 @@ public class Hdf5Loader {
                         a[j] = (float) doubles[i][j];
                     }
                     return a;
-//                    return vectorTypeSupport.createFloatVector(a);
                 }).toArray(float[][]::new);
-//                queryVectors = vectorFloatStream.toArray(VectorFloat<?>[]::new);
             } else {
                 queryVectorsArray = (float[][]) queryDataset.getData();
             }
         }
         return new DataSetHdf5(similarityFunction, baseVectorsArray, queryVectorsArray, groundTruth, path);
+    }
+
+    private static Datasets.SimilarityFunction getSimilarityFunction(String filename) {
+        Datasets.SimilarityFunction similarityFunction;
+        if (filename.contains("-angular") || filename.contains("-dot") || filename.contains("-jaccard")) {
+            return Datasets.SimilarityFunction.COSINE;
+        }
+        if (filename.contains("-euclidean")) {
+            return Datasets.SimilarityFunction.EUCLIDEAN;
+        }
+        
+        throw new IllegalArgumentException("Unknown similarity function -- expected angular or euclidean for " + filename);
     }
 }

@@ -1,31 +1,24 @@
 package javaannbench.index;
 
-import io.github.jbellis.jvector.vector.types.VectorFloat;
+import com.google.common.base.Preconditions;
 import javaannbench.dataset.Datasets;
 import javaannbench.display.ProgressBar;
 import javaannbench.util.Bytes;
-import javaannbench.util.Exceptions;
 import javaannbench.util.Records;
-import com.google.common.base.Preconditions;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.codecs.KnnVectorsFormat;
 import org.apache.lucene.codecs.lucene90.Lucene90Codec;
 import org.apache.lucene.codecs.lucene90.Lucene90HnswVectorsFormat;
-//import org.apache.lucene.codecs.lucene912.Lucene912Codec;
-//import org.apache.lucene.codecs.lucene99.Lucene99Codec;
-//import org.apache.lucene.codecs.lucene99.Lucene99HnswScalarQuantizedVectorsFormat;
-//import org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat;
-//import org.apache.lucene.codecs.lucene99.Lucene99ScalarQuantizedVectorsFormat;
-//import org.apache.lucene.codecs.vectorsandbox.VectorSandboxScalarQuantizedVectorsFormat;
-//import org.apache.lucene.codecs.vectorsandbox.VectorSandboxVamanaVectorsFormat;
 import org.apache.lucene.document.Document;
-//import org.apache.lucene.document.KnnFloatVectorField;
 import org.apache.lucene.document.KnnVectorField;
 import org.apache.lucene.document.StoredField;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.search.IndexSearcher;
-//import org.apache.lucene.search.KnnFloatVectorQuery;
-import org.apache.lucene.search.KnnVectorQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
@@ -42,7 +35,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.IntStream;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
