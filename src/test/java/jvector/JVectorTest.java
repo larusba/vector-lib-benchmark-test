@@ -1,8 +1,8 @@
 package jvector;
 
-import javaannbench.BuildBench;
-import javaannbench.QueryBench;
-import javaannbench.util.Config;
+import benchmark.BuildBench;
+import benchmark.QueryBench;
+import util.Config;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -16,7 +16,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static utils.TestUtil.*;
+import static util.TestUtil.*;
 
 class JVectorTest {
 

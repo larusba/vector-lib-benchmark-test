@@ -9,7 +9,7 @@ build:
   beamWidth: 88
   scalarQuantization: false
   numThreads: 5
-  forceMerge: false
+  forceMerge: 0
 query:
   numCandidates: 9
 k: 10

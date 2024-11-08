@@ -1,6 +1,6 @@
 package util;
 
-import javaannbench.index.Index;
+import index.Index;
 import org.apache.commons.math3.stat.descriptive.SynchronizedDescriptiveStatistics;
 import oshi.SystemInfo;
 import oshi.hardware.HardwareAbstractionLayer;
