@@ -1,0 +1,13 @@
+dataset: sift-128-euclidean
+provider: jvector
+runtime:
+  jfr: true
+build:
+  beamWidth: 88
+  M: 1
+  neighborOverflow: 0.43
+  alpha: 0.32
+query:
+  numCandidates: 15
+  pqFactor: 27
+k: 10
