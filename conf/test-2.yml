@@ -16,5 +16,4 @@ build:
   scalarQuantization: false
   numThreads: 1
   forceMerge: 0
-  confidenceInterval: 0.9
   

@@ -1,15 +1,16 @@
 package lucene;
 
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.hnsw.RandomAccessVectorValues;
+import org.apache.lucene.index.RandomAccessVectorValues;
+import org.apache.lucene.index.RandomAccessVectorValuesProducer;
+import org.apache.lucene.index.VectorValues;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.Arrays;
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 // TODO - reuse this one similar to ListRandomAccessVectorValues ?? 
 
-public class CustomVectorProvider implements RandomAccessVectorValues {
+public class CustomVectorProvider extends VectorValues implements RandomAccessVectorValues, RandomAccessVectorValuesProducer {
 
     int doc = -1;
     private final float[][] data;
@@ -28,20 +29,14 @@ public class CustomVectorProvider implements RandomAccessVectorValues {
     }
 
     @Override
-    public RandomAccessVectorValues copy() throws IOException {
+    public BytesRef binaryValue(int i) throws IOException {
         return null;
     }
 
     @Override
-    public int ordToDoc(int ord) {
-        return RandomAccessVectorValues.super.ordToDoc(ord);
+    public RandomAccessVectorValues randomAccess() {
+        return new CustomVectorProvider(data);
     }
-
-    @Override
-    public Bits getAcceptOrds(Bits acceptDocs) {
-        return RandomAccessVectorValues.super.getAcceptOrds(acceptDocs);
-    }
-    
 
     @Override
     public int dimension() {
@@ -53,22 +48,22 @@ public class CustomVectorProvider implements RandomAccessVectorValues {
         return data.length;
     }
 
-//    @Override
+    @Override
     public float[] vectorValue() throws IOException {
         return vectorValue(doc);
     }
 
-//    @Override
+    @Override
     public int docID() {
         return doc;
     }
 
-//    @Override
+    @Override
     public int nextDoc() throws IOException {
         return advance(doc + 1);
     }
 
-//    @Override
+    @Override
     public int advance(int target) throws IOException {
         if (target >= 0 && target < data.length) {
             doc = target;
@@ -76,6 +71,11 @@ public class CustomVectorProvider implements RandomAccessVectorValues {
             doc = NO_MORE_DOCS;
         }
         return doc;
+    }
+
+    @Override
+    public long cost() {
+        return data.length;
     }
 
 

@@ -59,7 +59,6 @@ public interface Index extends AutoCloseable {
             parts.length == 3, "unexpected build description format: %s", description);
 
         var provider = parts[0];
-        var type = parts[1];
         var buildParametersString = parts[2];
 
         var buildParameters =

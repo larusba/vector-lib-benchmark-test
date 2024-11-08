@@ -15,7 +15,7 @@ public class LuceneUtil {
         TopDocs[] results = new TopDocs[reader.leaves().size()];
         for (LeafReaderContext ctx : reader.leaves()) {
             Bits liveDocs = ctx.reader().getLiveDocs();
-            results[ctx.ord] = ctx.reader().searchNearestVectors(field, vector, docLimit + fanout, liveDocs, 100);
+            results[ctx.ord] = ctx.reader().searchNearestVectors(field, vector, docLimit + fanout, liveDocs);
             int docBase = ctx.docBase;
             for (ScoreDoc scoreDoc : results[ctx.ord].scoreDocs) {
                 scoreDoc.doc += docBase;

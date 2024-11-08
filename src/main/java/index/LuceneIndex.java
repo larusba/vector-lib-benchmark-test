@@ -1,12 +1,12 @@
 package index;
 
 import com.google.common.base.Preconditions;
+import org.apache.lucene.codecs.lucene90.Lucene90Codec;
+import org.apache.lucene.codecs.lucene90.Lucene90HnswVectorsFormat;
 import util.ProgressBar;
 import util.Records;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.codecs.KnnVectorsFormat;
-import org.apache.lucene.codecs.lucene99.Lucene99Codec;
-import org.apache.lucene.codecs.lucene99.Lucene99HnswScalarQuantizedVectorsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.KnnVectorField;
 import org.apache.lucene.document.StoredField;
@@ -74,19 +74,11 @@ public final class LuceneIndex {
 
       var directory = new MMapDirectory(path);
 
-      var codec = new Lucene99Codec() {
-              @Override
-              public KnnVectorsFormat getKnnVectorsFormatForField(String field) {
-                return new Lucene99HnswScalarQuantizedVectorsFormat(
-                        hnswParams.maxConn,
-                        hnswParams.beamWidth,
-                        hnswParams.numThreads,
-                        hnswParams.confidenceInterval,
-                        hnswParams.numThreads == 1
-                                ? null
-                                : Executors.newFixedThreadPool(hnswParams.numThreads)
-                );
-              }
+      var codec = new Lucene90Codec() {
+        @Override
+        public KnnVectorsFormat getKnnVectorsFormatForField(String field) {
+          return new Lucene90HnswVectorsFormat(hnswParams.maxConn, hnswParams.beamWidth);
+        }
       };
 
       IndexWriterConfig config = new IndexWriterConfig()
@@ -190,11 +182,6 @@ public final class LuceneIndex {
         var mergeEnd = Instant.now();
         build.add(new BuildPhase("merge", Duration.between(mergeStart, mergeEnd)));
       }
-      
-      var commitStart = Instant.now();
-      this.writer.commit();
-      var commitEnd = Instant.now();
-      build.add(new BuildPhase("commit", Duration.between(commitStart, commitEnd)));
       
       return new BuildSummary(build);
     }
