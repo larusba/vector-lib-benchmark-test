@@ -27,7 +27,6 @@ public class BuildBench {
 
         Recording recording = null;
 
-        // todo
         if (jfr) {
             var jfrPath = reportsPath.resolve(
                     String.format(

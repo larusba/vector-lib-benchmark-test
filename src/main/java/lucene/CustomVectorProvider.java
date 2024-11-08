@@ -8,8 +8,6 @@ import org.apache.lucene.util.BytesRef;
 import java.io.IOException;
 import java.util.Arrays;
 
-// TODO - reuse this one similar to ListRandomAccessVectorValues ?? 
-
 public class CustomVectorProvider extends VectorValues implements RandomAccessVectorValues, RandomAccessVectorValuesProducer {
 
     int doc = -1;

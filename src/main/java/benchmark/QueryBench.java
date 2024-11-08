@@ -173,7 +173,6 @@ public class QueryBench {
                     System.out.println("\trecall {}" + recalls.getMean() * recalls.getN());
                 }
                 System.out.println("\taverage duration in ns {}" + executionDurations.getMean());
-                // TODO - executionDurations.getSum() / (double) TimeUnit.MILLISECONDS.toNanos(1) <-- seconds??
                 System.out.println("\ttotal duration in ns {}" + executionDurations.getSum());
 
                 if (threadStats && !testOnTrain) {
@@ -331,13 +330,10 @@ public class QueryBench {
 
     private static <V> Stream getStream(V groundTruth) {
         if (groundTruth instanceof Collection<?> set) {
-//      List<? extends Set<Integer>> groundTruth1 = (List<? extends Set<Integer>>) groundTruth;
             return set.stream();
         }
-        int[] groundTruth1 = (int[]) groundTruth;
-
-        // todo - check it..
-        return Arrays.stream(groundTruth1).boxed();
+        int[] groundTruthArray = (int[]) groundTruth;
+        return Arrays.stream(groundTruthArray).boxed();
     }
 
     private static Prom startPromServer(Config.QuerySpec spec, int numQueries) throws Exception {

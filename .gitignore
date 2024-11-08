@@ -9,6 +9,7 @@ hdf5/
 
 ### IntelliJ IDEA ###
 .idea
+.idea/
 
 ### Eclipse ###
 .apt_generated
@@ -40,4 +41,3 @@ pq_cache
 siftsmall
 src/test/resources
 stats
-/.idea/

@@ -126,8 +126,7 @@ public final class LuceneIndex {
                           doc.add(
                               new KnnVectorField(
                                   VECTOR_FIELD,
-                                  // todo - change it???
-                                      (float[]) this.vectors.vectorValue(i),
+                                      this.vectors.vectorValue(i),
                                   this.similarityFunction));
                       try {
                           this.writer.addDocument(doc);

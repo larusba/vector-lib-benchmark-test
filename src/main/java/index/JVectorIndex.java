@@ -233,14 +233,7 @@ public class JVectorIndex {
                   similarityFunction, 
                   graph,
                   Bits.ALL);
-
-      SearchResult.NodeScore[] nodes = results.getNodes();
       
-      // TODO - WHY ALWAYS 1???
-      
-      System.out.println("nodes.length = " + nodes.length);
-      System.out.println("nodes = " + nodes[0].score);
-      System.out.println("nodes = " + nodes[0].node);
       return Arrays.stream(results.getNodes())
           .map(nodeScore -> {
             System.out.println("nodeScore = " + nodeScore);
@@ -295,23 +288,6 @@ public class JVectorIndex {
           pqFactor +
           pqDims);
 
-      // todo - this is needed?
-//      var graphVectors = graphViewVectors(graph.getView(), dimensions);
-//      var size = graph.size();
-//
-//      List<VectorFloat<?>> vectors;
-//      try (var progress = ProgressBar.create("loading vectors from graph", size)) {
-//        vectors =
-//            IntStream.range(0, size)
-//                .sequential()
-//                .mapToObj(graphVectors::vectorValue)
-//                .peek(ignored -> progress.inc())
-//                .collect(Collectors.toList());
-//      }
-//
-//      System.out.println("building codebooks");
-      
-      // TODO - CONFIG
       int clusterCount = 256;
       
       var pqStart = Instant.now();
@@ -326,10 +302,8 @@ public class JVectorIndex {
 
       System.out.println("beginning to quantize vectors");
       var quantizeStart = Instant.now();
-      // todo - check it
       var quantizedVectors = pq.encodeAll(baseVectors);
       
-      // todo : try with BQVectors
       var compressedVectors = new PQVectors(pq, quantizedVectors);
       var quantizeEnd = Instant.now();
       System.out.println(
