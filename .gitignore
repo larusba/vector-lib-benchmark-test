@@ -46,3 +46,4 @@ pq_cache
 siftsmall
 src/test/resources
 stats
+/.idea/

@@ -219,7 +219,7 @@ public class QueryBench {
                 STR."\{spec.provider()}-\{spec.dataset()}",
                 index.description(), recalls, testOnTrain,
                 recall, executionDurations, minorFaults,
-                majorFaults, threadStats
+                majorFaults, threadStats, spec.k()
         );
 
         System.out.println("completed recall test for {}:" + index.description());

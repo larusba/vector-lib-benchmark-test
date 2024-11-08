@@ -58,7 +58,11 @@ public class BuildBench {
       var totalTime =
           summary.phases().stream().map(BuildPhase::duration).reduce(Duration.ZERO, Duration::plus);
 
-      StatsUtil.appendToBuildCsv(STR."\{spec.provider()}-\{spec.dataset()}", index.description(), summary, String.valueOf(index.size()));
+      StatsUtil.appendToBuildCsv(
+              STR."\{spec.provider()}-\{spec.dataset()}",
+              index.description(), summary,
+              String.valueOf(index.size())
+      );
       System.out.println("completed building index for " + index.description());
       summary
           .phases()

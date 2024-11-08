@@ -7,6 +7,7 @@ import oshi.hardware.HardwareAbstractionLayer;
 
 import java.io.*;
 import java.time.Duration;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,6 +16,7 @@ import java.util.stream.Stream;
 public class StatsUtil {
 
     private static final String STATS_DIR = "stats/";
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("uuuu-MM-dd_HH:mm:ss");
     private static final String[] buildHeader = new String[]{
             "Index", "Phases", "TotDuration", "Size",
             "RamUsage", "AvailableMemory"
@@ -22,10 +24,9 @@ public class StatsUtil {
     private static final String[] queryHeader = new String[]{
             "Index", "TotalQueries", "AvgRecall", "Recall",
             "AvgDuration", "TotDuration", "AvgMinFaults", "AvgMajFault", "MaxDuration",
-            "MaxMinFaults", "MaxMajFaults", "TotMinFaults", "TotMajFaults",
+            "MaxMinFaults", "MaxMajFaults", "TotMinFaults", "TotMajFaults", "k",
             "RamUsage", "AvailableMemory"
     };
-
     public static String escapeSpecialCharacters(String data) {
         if (data == null) {
             throw new IllegalArgumentException("Input data cannot be null");
@@ -60,7 +61,8 @@ public class StatsUtil {
             SynchronizedDescriptiveStatistics recalls, boolean testOnTrain, boolean recall,
             SynchronizedDescriptiveStatistics executionDurations,
             SynchronizedDescriptiveStatistics minorFaults,
-            SynchronizedDescriptiveStatistics majorFaults, boolean threadStats
+            SynchronizedDescriptiveStatistics majorFaults, boolean threadStats,
+            int k
 
     ){
         String[] csvStatLine = new String[]{
@@ -77,6 +79,7 @@ public class StatsUtil {
                 String.valueOf(threadStats && !testOnTrain? majorFaults.getMax(): ""),
                 String.valueOf(threadStats && !testOnTrain? minorFaults.getSum(): ""),
                 String.valueOf(threadStats && !testOnTrain? majorFaults.getSum(): ""),
+                String.valueOf(k),
                 "",""
         };
         appendLine(csvStatLine, StringTemplate.STR."query-\{fileName}");
@@ -133,5 +136,39 @@ public class StatsUtil {
         dummyHeader.add(header);
         StatsUtil.writeCSV(dummyHeader, StringTemplate.STR."\{fileName}.csv");
     }
+
+//    volevo evitare l'init del csv ma ho solo abbozzato il metodo
+//    private static File getStatsCsv(String fileName){
+//        File csvOutputFile = new File(STR."\{STATS_DIR}\{fileName}.csv");
+//        if(csvOutputFile.exists()){
+//            csvOutputFile = new File(STR."\{STATS_DIR}\{fileName}_\{formatter.format(LocalDateTime.now())}.csv" );
+//        }
+//        return csvOutputFile;
+//    }
+//
+//    private static void init(String provider, String dataset){
+//        File csvOutputFile = StatsUtil.getStatsCsv(STR."\{provider}-\{dataset}");
+//        try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
+//            pw.println(StatsUtil.convertToCSV(StatsUtil.getHeader(provider)));
+//        } catch (FileNotFoundException e) {
+//            throw new RuntimeException(e);
+//        }
+//    }
+
+//    private static String[] getHeader(String[] base, String provider){
+//        String[] header;
+//        switch (provider){
+//            case "jvector":
+//                header = Arrays.copyOf(base, base.length + jvectorHeader.length);
+//                System.arraycopy(jvectorHeader, 0, header, base.length, jvectorHeader.length);
+//                return header;
+//            case "lucene":
+//                header = Arrays.copyOf(base, base.length + luceneHeader.length);
+//                System.arraycopy(luceneHeader, 0, header, base.length, luceneHeader.length);
+//                return header;
+//            default:
+//                return base;
+//        }
+//    }
 
 }

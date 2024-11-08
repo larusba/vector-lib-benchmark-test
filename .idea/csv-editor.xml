@@ -3,28 +3,49 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
-        <entry key="/stats/build-gist-960-euclidean.csv">
+        <entry key="/stats/build-jvector-gist-960-euclidean.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value=":" />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/stats/build-jvector-glove-100-angular.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
             </Attribute>
           </value>
         </entry>
-        <entry key="/stats/build-glove-100-angular.csv">
+        <entry key="/stats/build-jvector-movielens10m-jaccard.hdf5.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
             </Attribute>
           </value>
         </entry>
-        <entry key="/stats/query-gist-960-euclidean.csv">
+        <entry key="/stats/build-lucene-glove-100-angular.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
             </Attribute>
           </value>
         </entry>
-        <entry key="/stats/query-glove-100-angular.csv">
+        <entry key="/stats/query-jvector-gist-960-euclidean.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/stats/query-jvector-glove-100-angular.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/stats/query-jvector-movielens10m-jaccard.hdf5.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
