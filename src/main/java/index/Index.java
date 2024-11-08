@@ -37,8 +37,7 @@ public interface Index extends AutoCloseable {
       
       
       if (dataset instanceof DataSetLucene dataSet) {
-        return new LuceneIndex.Builder(
-                datasetPath, dataSet.baseVectorsArray(), dataSet.similarityFunction, parameters);
+        return new LuceneIndex.Builder(datasetPath, dataSet.baseVectorsArray(), dataSet.similarityFunction, parameters);
       } else if (dataset instanceof DataSetJVector dataSet) {
         return new JVectorIndex.Builder(
                 datasetPath, dataSet.getBaseRavv(), dataSet.similarityFunction(), parameters);

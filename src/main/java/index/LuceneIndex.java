@@ -3,6 +3,7 @@ package index;
 import com.google.common.base.Preconditions;
 import org.apache.lucene.codecs.lucene90.Lucene90Codec;
 import org.apache.lucene.codecs.lucene90.Lucene90HnswVectorsFormat;
+import util.Exceptions;
 import util.ProgressBar;
 import util.Records;
 import org.apache.commons.io.FileUtils;
@@ -32,13 +33,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.stream.IntStream;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 public final class LuceneIndex {
   
   public record HnswBuildParameters(
-      int maxConn, int beamWidth, boolean scalarQuantization, int numThreads, int forceMerge, float confidenceInterval) {}
+      int maxConn, int beamWidth, boolean scalarQuantization, int numThreads, int forceMerge) {}
 
   public record HnswQueryParameters(int numCandidates) {}
 
@@ -108,71 +111,37 @@ public final class LuceneIndex {
       System.out.println("vectors size = " + vectors.size());
       var size = this.vectors.size();
       var numThreads = hnswParams.numThreads;
-
-      int indexedDoc = 0;
       
       var buildStart = Instant.now();
       
-//      try (var pool = new ForkJoinPool(numThreads)) {
+      try (var pool = new ForkJoinPool(numThreads)) {
         try (var progress = ProgressBar.create("building", size)) {
 
-
-          while (vectors.nextDoc() != NO_MORE_DOCS) {
-            while (indexedDoc < vectors.docID()) {
-              // increment docId in the index by adding empty documents
-              writer.addDocument(new Document());
-              indexedDoc++;
-            }
-            Document doc = new Document();
-            // System.out.println("Got: " + v2.vectorValue()[0] + ":" + v2.vectorValue()[1] + "@" + v2.docID());
-            doc.add(new KnnVectorField(VECTOR_FIELD, vectors.vectorValue(), similarityFunction));
-            doc.add(new StoredField(ID_FIELD, vectors.docID()));
-            writer.addDocument(doc);
-            indexedDoc++;
-            progress.inc();
-          }
-          
-          
-//          pool.submit(
-//                  () -> {
-//      for (int i = 0; i < size; i++) {
-        
-      
-//                    IntStream.range(0, size)
-//                        .parallel()
-//                        .forEach(
-//                            i -> {
-//                              Exceptions.wrap(
-//                                  () -> {
-//                                    var doc = new Document();
-//                                    doc.add(new StoredField(ID_FIELD, i));
-//                                    doc.add(
-//                                        new KnnVectorField(
-//                                            VECTOR_FIELD,
-//                                            // todo - change it???
-//                                                (float[]) this.vectors.vectorValue(i),
-//                                            this.similarityFunction));
-//                                try {
-//                                    this.writer.addDocument(doc);
-//                                } catch (IOException e) {
-//                                  System.out.println("e = " + e);
-//                                    throw new RuntimeException(e);
-//                                }
-//                                  });
-//                              progress.inc();
-////                            });
-//                  });
-//              .join();
-//        }
-          
-          progress.close();
+          pool.submit(() -> IntStream.range(0, size)
+                  .parallel()
+                  .forEach(i -> {
+                    Exceptions.wrap(() -> {
+                      var doc = new Document();
+                          doc.add(new StoredField(ID_FIELD, i));
+                          doc.add(
+                              new KnnVectorField(
+                                  VECTOR_FIELD,
+                                  // todo - change it???
+                                      (float[]) this.vectors.vectorValue(i),
+                                  this.similarityFunction));
+                      try {
+                          this.writer.addDocument(doc);
+                      } catch (IOException e) {
+                        System.out.println("e = " + e);
+                          throw new RuntimeException(e);
+                      }
+                    });
+                    progress.inc();
+                  })).join();
+        }
       }
-
-//      }
       var buildEnd = Instant.now();
 
-        
-//
       ArrayList<BuildPhase> build = new ArrayList<>();
       build.add( new BuildPhase("build", Duration.between(buildStart, buildEnd)) );
       
@@ -270,9 +239,10 @@ public final class LuceneIndex {
     @Override
     public String description() {
       return String.format(
-          "lucene_%s_%s_%s",
+          "lucene_%s_%s",
           LuceneIndex.Builder.buildParamString(buildParams),
-          queryParamString());
+          queryParamString()
+      );
     }
 
     @Override

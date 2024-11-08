@@ -1,4 +1,4 @@
-dataset: glove-100-angular
+dataset: sift-128-euclidean
 provider: lucene
 runtime:
   jfr: true

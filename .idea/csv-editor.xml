@@ -17,7 +17,14 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="/stats/build-jvector-movielens10m-jaccard.hdf5.csv">
+        <entry key="/stats/build-jvector-sift-128-euclidean.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/stats/build-lucene-gist-960-euclidean.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
@@ -45,7 +52,42 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/stats/query-jvector-movielens10m-jaccard.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/stats/query-jvector-movielens10m-jaccard.hdf5.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/stats/query-jvector-sift-128-euclidean.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/stats/query-lucene-gist-960-euclidean.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/stats/query-lucene-glove-100-angular.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/stats/query-lucene-sift-128-euclidean.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />

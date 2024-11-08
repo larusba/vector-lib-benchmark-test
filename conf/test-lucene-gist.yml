@@ -1,16 +1,14 @@
 dataset: gist-960-euclidean
 provider: lucene
-type: hnsw
 runtime:
   jfr: true
   testOnTrain: false
 build:
   maxConn: 14
-  beamWidth: 100
+  beamWidth: 5
   scalarQuantization: false
   numThreads: 5
   forceMerge: 0
 query:
   numCandidates: 1
 k: 10
-visitedLimit: 10

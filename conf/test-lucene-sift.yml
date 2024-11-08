@@ -1,14 +1,14 @@
-dataset: glove-100-angular
+dataset: sift-128-euclidean
 provider: lucene
-type: hnsw
 runtime:
   jfr: true
   testOnTrain: false
 build:
-  maxConn: 16
-  beamWidth: 100
+  maxConn: 14
+  beamWidth: 5
   scalarQuantization: false
   numThreads: 5
   forceMerge: 0
 query:
-  numCandidates: 10
+  numCandidates: 1
+k: 10

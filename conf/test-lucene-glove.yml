@@ -1,8 +1,7 @@
 dataset: glove-100-angular
 provider: lucene
-type: hnsw
 runtime:
-  jfr: false
+  jfr: true
   testOnTrain: false
 build:
   maxConn: 14

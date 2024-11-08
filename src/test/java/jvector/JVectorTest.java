@@ -11,8 +11,12 @@ import org.junit.jupiter.api.Test;
 import util.StatsUtil;
 
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -20,31 +24,24 @@ import static util.TestUtil.*;
 
 class JVectorTest {
 
-    public static final String YML_LIST = System.getenv("J_VECTOR_YAML_LIST");
-    public static final Set<String> TEST_LUCENE_YML = Arrays.stream(
-            StringUtils.split(
-                    StringUtils.isAllBlank(YML_LIST) ?  "test-jvector-glove.yml,test-jvector-gist.yml": YML_LIST,
-                    ","
-            )
-    ).collect(Collectors.toSet());
+    public static final String YML_CONF_PATTERN = Optional.ofNullable(System.getenv("J_VECTOR_YAML_LIST")).orElse("test-jvector-*.yml");
     public static final Set<Config.BuildSpec> BUILD_SPEC_LOAD = new HashSet<>();
     public static final Set<Config.QuerySpec> QUERY_SPEC_LOAD = new HashSet<>();
 
     @BeforeAll
     public static void setUp() throws IOException {
-        TEST_LUCENE_YML.forEach(yml -> {
-            try {
-                BUILD_SPEC_LOAD.add(Config.BuildSpec.load(yml));
-                QUERY_SPEC_LOAD.add(Config.QuerySpec.load(yml));
-            } catch (Exception e){
-                System.out.println(STR."unexpected exception during the \{yml} config load...");
-                System.out.println(e.getMessage());
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Path.of("conf/"), YML_CONF_PATTERN)) {
+            for (Path yml: stream) {
+                try {
+                    BUILD_SPEC_LOAD.add(Config.BuildSpec.load(yml.getFileName().toString()));
+                    QUERY_SPEC_LOAD.add(Config.QuerySpec.load(yml.getFileName().toString()));
+                } catch (Exception e){
+                    System.out.println(STR."unexpected exception during the \{yml} config load...");
+                    System.out.println(e.getMessage());
+                }
             }
-        });
+        }
     }
-    
-    // todo - parameterized test...
-    // todo - benchmark test
     
     @Test
     @Order(1)
@@ -55,7 +52,10 @@ class JVectorTest {
 
         BUILD_SPEC_LOAD.forEach(
                 load -> Assertions.assertDoesNotThrow(
-                        () -> BuildBench.build(load, datasetPath, indexesPath, reportsPath)
+                        () -> {
+                            System.out.println(STR."loading \{load.dataset()} dataset...");
+                            BuildBench.build(load, datasetPath, indexesPath, reportsPath);
+                        }
                 )
         );
     }

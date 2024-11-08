@@ -7,6 +7,7 @@ import oshi.hardware.HardwareAbstractionLayer;
 
 import java.io.*;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +47,7 @@ public class StatsUtil {
     }
 
     public static void writeCSV(List<String[]> dataLines, String filename) {
-        File csvOutputFile = new File(STATS_DIR + filename);
+        File csvOutputFile = new File(filename);
         try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
             dataLines.stream()
                     .map(StatsUtil::convertToCSV)
@@ -134,41 +135,7 @@ public class StatsUtil {
     public static void initStatsCsv(String[] header, String fileName){
         List<String[]> dummyHeader = new ArrayList<>();
         dummyHeader.add(header);
-        StatsUtil.writeCSV(dummyHeader, StringTemplate.STR."\{fileName}.csv");
+        StatsUtil.writeCSV(dummyHeader, STR."\{STATS_DIR}\{fileName}.csv" );
     }
-
-//    volevo evitare l'init del csv ma ho solo abbozzato il metodo
-//    private static File getStatsCsv(String fileName){
-//        File csvOutputFile = new File(STR."\{STATS_DIR}\{fileName}.csv");
-//        if(csvOutputFile.exists()){
-//            csvOutputFile = new File(STR."\{STATS_DIR}\{fileName}_\{formatter.format(LocalDateTime.now())}.csv" );
-//        }
-//        return csvOutputFile;
-//    }
-//
-//    private static void init(String provider, String dataset){
-//        File csvOutputFile = StatsUtil.getStatsCsv(STR."\{provider}-\{dataset}");
-//        try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
-//            pw.println(StatsUtil.convertToCSV(StatsUtil.getHeader(provider)));
-//        } catch (FileNotFoundException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
-
-//    private static String[] getHeader(String[] base, String provider){
-//        String[] header;
-//        switch (provider){
-//            case "jvector":
-//                header = Arrays.copyOf(base, base.length + jvectorHeader.length);
-//                System.arraycopy(jvectorHeader, 0, header, base.length, jvectorHeader.length);
-//                return header;
-//            case "lucene":
-//                header = Arrays.copyOf(base, base.length + luceneHeader.length);
-//                System.arraycopy(luceneHeader, 0, header, base.length, luceneHeader.length);
-//                return header;
-//            default:
-//                return base;
-//        }
-//    }
 
 }

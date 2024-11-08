@@ -1,4 +1,4 @@
-dataset: gist-960-euclidean
+dataset: sift-128-euclidean
 provider: lucene
 runtime:
   jfr: true

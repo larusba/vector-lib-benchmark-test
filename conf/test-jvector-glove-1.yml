@@ -1,14 +1,13 @@
 dataset: glove-100-angular
 provider: jvector
-type: vamana
 runtime:
-  jfr: false
+  jfr: true
 build:
-  beamWidth: 100
+  beamWidth: 10
   M: 1
   neighborOverflow: 0.61
   alpha: 0.8
 query:
-  numCandidates: 5
+  numCandidates: 3
   pqFactor: 15
 k: 10

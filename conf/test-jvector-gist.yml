@@ -1,10 +1,9 @@
 dataset: gist-960-euclidean
 provider: jvector
-type: vamana
 runtime:
-  jfr: false
+  jfr: true
 build:
-  beamWidth: 100
+  beamWidth: 5
   M: 1
   neighborOverflow: 0.1
   alpha: 0.2
