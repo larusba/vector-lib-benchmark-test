@@ -7,6 +7,7 @@ This project contains tests for benchmarking nearest neighbors with JVector and 
 It contains 2 tests which run the benchmarks, i.e. `LuceneTest` and `JVectorTest`,
 that leverage some yaml files for configuration, which should be placed in the `/conf` folder,
 and they print the results in some CSV named `query-<provider>-<dataset>.csv` for query tests and `build-<provider>-<dataset>.csv` for index build tests.
+
 The  `LuceneTest` will read the file `test-lucene-*.yml` files, while the `JVectorTest` the `test-jvector-*.yml` files.
 
 By inserting the yml config `runtime.jfr: true`, 
@@ -52,7 +53,7 @@ The `<topK>` indicates the number of vector to return in query phase.
 All the queries use a [ForkJoinPool](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ForkJoinPool.html) 
 with a parallelism level equal to 5.
 
-The test are executed using the java arguments: `-ea --enable-preview --add-modules jdk.incubator.vector -Xms6g -Xmx6g`,
+The test are executed using the java arguments: `-ea --enable-preview --add-modules jdk.incubator.vector -Xms10g -Xmx12g`,
 set via pom.xml with the `<argLine>` of the `maven-surefire-plugin`.
 
 ## JVector
@@ -204,10 +205,11 @@ which will generate these `.jfr` file for respectively the build and the query s
 
 ## Results
 
+These are the results that are obtained with a MacBook Air, with Apple M3 processor, total Number of Cores:	8, memory: 16 GB:
 
-These are the results that are obtained with TODO(pc hardware):
-
-- csv files: https://github.com/user-attachments/files/17680626/stats.zip
-- jfr files: https://github.com/user-attachments/files/17680625/reports.2.zip
+- CSV files for Lucene: https://github.com/user-attachments/files/17681670/stats-lucene.zip
+- JFR files for Lucene: https://github.com/user-attachments/files/17681671/reports-lucene.zip
+- CSV files for JVector: https://github.com/user-attachments/files/17681705/stats-jvector.zip
+- JFR files for JVector: https://github.com/user-attachments/files/17681706/reports-jvector.zip
 
 
