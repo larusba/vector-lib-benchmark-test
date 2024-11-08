@@ -22,7 +22,7 @@ import static util.TestUtil.*;
 
 class LuceneTest {
 
-    public static final String YML_CONF_PATTERN = Optional.ofNullable(System.getenv("LUCINE_YAML_LIST")).orElse("test-jvector-*.yml");
+    public static final String YML_CONF_PATTERN = Optional.ofNullable(System.getenv("LUCINE_YAML_LIST")).orElse("test-lucene-*.yml");
     public static final Set<Config.BuildSpec> BUILD_SPEC_LOAD = new HashSet<>();
     public static final Set<Config.QuerySpec> QUERY_SPEC_LOAD = new HashSet<>();
 
