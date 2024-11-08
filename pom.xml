@@ -216,7 +216,7 @@
         <version>3.0.0-M7</version> <!-- pick your own version -->
         <configuration>
           <forkCount>1</forkCount>
-          <argLine>-ea --enable-preview --add-modules jdk.incubator.vector -Xms6g -Xmx6g</argLine>
+          <argLine>-ea --enable-preview --add-modules jdk.incubator.vector -Xms10g -Xmx12g</argLine>
         </configuration>
       </plugin>
       

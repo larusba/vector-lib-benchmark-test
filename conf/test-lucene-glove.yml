@@ -5,7 +5,7 @@ runtime:
   testOnTrain: false
 build:
   maxConn: 14
-  beamWidth: 5
+  beamWidth: 1
   scalarQuantization: false
   numThreads: 5
   forceMerge: 0
