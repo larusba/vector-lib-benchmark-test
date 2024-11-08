@@ -1,20 +1,19 @@
 package util;
 
-import javaannbench.dataset.Datasets;
 import org.apache.lucene.index.VectorSimilarityFunction;
-import utils.CustomVectorProvider;
+import lucene.CustomVectorProvider;
 
-public class DataSetLucene implements DataSetInterfaceVector<
+public class DataSetLucene implements DataSetVector<
         CustomVectorProvider, CustomVectorProvider, int[][], VectorSimilarityFunction
         > {
     public final String name;
-    public final Datasets.SimilarityFunction similarityFunction;
+    public final DataSetVector.SimilarityFunction similarityFunction;
     public final CustomVectorProvider baseVectors;
     public final CustomVectorProvider queryVectors;
     public final int[][] groundTruth;
 
     public DataSetLucene(
-            String name, Datasets.SimilarityFunction similarityFunction, 
+            String name, DataSetVector.SimilarityFunction similarityFunction, 
             float[][] baseVectors, float[][] queryVectors, int[][] groundTruth
     ) {
         this.name = name;

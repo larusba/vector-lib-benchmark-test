@@ -15,5 +15,6 @@ build:
   inGraphVectors: true
   scalarQuantization: false
   numThreads: 1
-  forceMerge: false
+  forceMerge: 0
+  confidenceInterval: 0.9
   
