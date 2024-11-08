@@ -1,0 +1,14 @@
+dataset: sift-128-euclidean
+provider: lucene
+runtime:
+  jfr: true
+  testOnTrain: false
+build:
+  maxConn: 14
+  beamWidth: 5
+  scalarQuantization: false
+  numThreads: 5
+  forceMerge: 0
+query:
+  numCandidates: 1
+k: 10

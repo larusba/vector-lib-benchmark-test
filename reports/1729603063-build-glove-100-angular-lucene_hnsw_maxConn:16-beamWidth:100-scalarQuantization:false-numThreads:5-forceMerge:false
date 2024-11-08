@@ -1,1 +1,0 @@
-v1,lucene_hnsw_maxConn:16-beamWidth:100-scalarQuantization:false-numThreads:5-forceMerge:false,glove-100-angular,lucene,hnsw,beamWidth:100-forceMerge:false-maxConn:16-numThreads:5-scalarQuantization:false,159254847000,build:155846447000-merge:1000-commit:3408399000,546142515

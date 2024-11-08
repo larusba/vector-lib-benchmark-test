@@ -1,4 +1,4 @@
-package jvector;
+package lucene;
 
 import benchmark.BuildBench;
 import benchmark.QueryBench;
@@ -19,14 +19,15 @@ import java.util.Set;
 
 import static util.TestUtil.*;
 
-class JVectorTest {
 
-    public static final String YML_CONF_PATTERN = Optional.ofNullable(System.getenv("J_VECTOR_YAML_LIST")).orElse("test-jvector-*.yml");
+class LuceneTest {
+
+    public static final String YML_CONF_PATTERN = Optional.ofNullable(System.getenv("LUCINE_YAML_LIST")).orElse("test-jvector-*.yml");
     public static final Set<Config.BuildSpec> BUILD_SPEC_LOAD = new HashSet<>();
     public static final Set<Config.QuerySpec> QUERY_SPEC_LOAD = new HashSet<>();
 
     @BeforeAll
-    public static void setUp() throws IOException {
+    static void setUp() throws IOException {
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(Path.of("conf/"), YML_CONF_PATTERN)) {
             for (Path yml: stream) {
                 try {
@@ -42,32 +43,26 @@ class JVectorTest {
     
     @Test
     @Order(1)
-    void testJVectorBuild() {
-        QUERY_SPEC_LOAD.stream()
+    void testLuceneBuild() throws Exception {
+        BUILD_SPEC_LOAD.stream()
                 .map(spec -> STR."\{spec.provider()}-\{spec.dataset()}")
                 .forEach(StatsUtil::initBuildStatsCsv);
-
         BUILD_SPEC_LOAD.forEach(
                 load -> Assertions.assertDoesNotThrow(
-                        () -> {
-                            System.out.println(STR."loading \{load.dataset()} dataset...");
-                            BuildBench.build(load, datasetPath, indexesPath, reportsPath);
-                        }
+                        () -> BuildBench.build(load, datasetPath, indexesPath, reportsPath)
                 )
         );
     }
-
+    
     @Test
-    void testJVectorQuery() {
+    void testLuceneQuery() throws Exception {
         QUERY_SPEC_LOAD.stream()
                 .map(spec -> STR."\{spec.provider()}-\{spec.dataset()}")
                 .forEach(StatsUtil::initQueryStatsCsv);
-
         QUERY_SPEC_LOAD.forEach(
                 load -> Assertions.assertDoesNotThrow(
                         () -> QueryBench.test(load, datasetPath, indexesPath, reportsPath)
                 )
         );
     }
-
 }

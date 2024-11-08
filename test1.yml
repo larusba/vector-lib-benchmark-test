@@ -1,5 +1,0 @@
-dataset: glove-100-angular
-provider: hnsw
-type: vamana
-runtime:
-  jfr: false
