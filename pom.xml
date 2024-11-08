@@ -219,25 +219,6 @@
           <argLine>-ea --enable-preview --add-modules jdk.incubator.vector -Xms6g -Xmx6g</argLine>
         </configuration>
       </plugin>
-      
-      <!-- Exec plugin to handle application run -->
-<!--      <plugin>-->
-<!--        <groupId>org.codehaus.mojo</groupId>-->
-<!--        <artifactId>exec-maven-plugin</artifactId>-->
-<!--        <version>3.0.0</version>-->
-<!--        <configuration>-->
-<!--          <mainClass>${exec.mainClass}</mainClass>-->
-<!--          <arguments>-->
-<!--            <argument>&#45;&#45;enable-preview</argument>-->
-<!--            <argument>-XX:+UnlockExperimentalVMOptions</argument>-->
-<!--            <argument>-XX:+EnableVectorSupport</argument>-->
-<!--            <argument>&#45;&#45;add-modules</argument>-->
-<!--            <argument>jdk.incubator.vector</argument>-->
-<!--            <argument>&#45;&#45;enable-native-access=ALL-UNNAMED</argument>-->
-<!--            <argument>-ea</argument>-->
-<!--          </arguments>-->
-<!--        </configuration>-->
-<!--      </plugin>-->
 
       <!-- Toolchain plugin to use JDK 21 -->
       <plugin>
@@ -261,29 +242,5 @@
       </plugin>
     </plugins>
   </build>
-
-<!--  <profiles>-->
-<!--    <profile>-->
-<!--      <id>runIoUring</id>-->
-<!--      <activation>-->
-<!--        <activeByDefault>false</activeByDefault>-->
-<!--      </activation>-->
-<!--      <build>-->
-<!--        <plugins>-->
-<!--          <plugin>-->
-<!--            <groupId>org.codehaus.mojo</groupId>-->
-<!--            <artifactId>exec-maven-plugin</artifactId>-->
-<!--            <version>3.0.0</version>-->
-<!--            <configuration>-->
-<!--              <mainClass>javaannbench.util.iouring.WrappedLib</mainClass>-->
-<!--              <arguments>-->
-<!--                <argument>-Djava.library.path=/usr/lib/aarch64-linux-gnu</argument>-->
-<!--                &lt;!&ndash; Add other JVM args as needed &ndash;&gt;-->
-<!--              </arguments>-->
-<!--            </configuration>-->
-<!--          </plugin>-->
-<!--        </plugins>-->
-<!--      </build>-->
-<!--    </profile>-->
-<!--  </profiles>-->
+  
 </project>
