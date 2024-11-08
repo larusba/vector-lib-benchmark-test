@@ -71,11 +71,11 @@ public class StatsUtil {
                 String.valueOf(recalls.getN()),
                 recall && !testOnTrain ? String.valueOf(recalls.getMean()): "",
                 recall && !testOnTrain ? String.valueOf(recalls.getMean()*recalls.getN()): "",
-                String.valueOf(executionDurations.getMean()),
-                String.valueOf(executionDurations.getSum()),
+                STR."\{Duration.ofNanos((long) executionDurations.getMean())} s",
+                STR."\{Duration.ofNanos((long) executionDurations.getSum())} s",
                 String.valueOf(threadStats && !testOnTrain? minorFaults.getMean(): ""),
                 String.valueOf(threadStats && !testOnTrain? majorFaults.getMean(): ""),
-                String.valueOf(Duration.ofNanos((long) executionDurations.getMax())),
+                STR."\{Duration.ofNanos((long) executionDurations.getMax())} s",
                 String.valueOf(threadStats && !testOnTrain? minorFaults.getMax(): ""),
                 String.valueOf(threadStats && !testOnTrain? majorFaults.getMax(): ""),
                 String.valueOf(threadStats && !testOnTrain? minorFaults.getSum(): ""),
@@ -97,13 +97,13 @@ public class StatsUtil {
         String[] csvStatLine = new String[]{
                 indexDescriptions,
                 summary.phases().stream()
-                        .map(phase -> StringTemplate.STR."\{phase.description()}:\{phase.duration()}")
+                        .map(phase -> STR."\{phase.description()}:\{phase.duration()}")
                         .collect(Collectors.joining(";")),
-                String.valueOf(totalTime.getNano()),
+                STR."\{totalTime.getSeconds()} s",
                 size,
                 "",""
         };
-        appendLine(csvStatLine, StringTemplate.STR."build-\{fileName}");
+        appendLine(csvStatLine, STR."build-\{fileName}");
     }
 
     public static void appendLine(String[] dataLine, String fileName) {

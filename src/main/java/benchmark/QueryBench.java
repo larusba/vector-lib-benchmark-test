@@ -110,7 +110,17 @@ public class QueryBench {
 
                     Recording recording = null;
                     if (jfr) {
-                        var jfrPath = reportsPath.resolve(String.format("%s-query-%s-%s.jfr", Instant.now().getEpochSecond(), spec.dataset(), spec.buildString()));
+                        var jfrPath = reportsPath.resolve(
+                                String.format(
+                                        "%s_%s-query-%s-%s-%s-k:%s.jfr",
+                                        spec.provider(),
+                                        Instant.now().getEpochSecond(),
+                                        spec.dataset(),
+                                        spec.buildString(),
+                                        spec.queryString(),
+                                        spec.k()
+                                )
+                        );
                         System.out.println("starting jfr, will dump to {}" + jfrPath);
                         Configuration config = Configuration.getConfiguration("profile");
                         recording = new Recording(config);

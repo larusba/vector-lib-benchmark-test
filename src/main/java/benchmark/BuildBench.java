@@ -29,7 +29,15 @@ public class BuildBench {
 
         // todo
         if (jfr) {
-            var jfrPath = reportsPath.resolve(String.format("%s-build-%s-%s.jfr", Instant.now().getEpochSecond(), spec.dataset(), spec.buildString()));
+            var jfrPath = reportsPath.resolve(
+                    String.format(
+                            "%s_%s-build-%s-%s.jfr",
+                            spec.provider(),
+                            Instant.now().getEpochSecond(),
+                            spec.dataset(),
+                            spec.buildString()
+                    )
+            );
             System.out.println("starting jfr, will log to {}" + jfrPath);
 
             Configuration config = Configuration.getConfiguration("profile");

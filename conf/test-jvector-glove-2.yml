@@ -8,6 +8,6 @@ build:
   neighborOverflow: 0.43
   alpha: 0.32
 query:
-  numCandidates: 3
+  numCandidates: 15
   pqFactor: 27
 k: 10
