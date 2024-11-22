@@ -201,7 +201,7 @@ which will generate these `.jfr` file for respectively the build and the query s
 
 These are the results that are obtained with a MacBook Air, with Apple M3 processor, total Number of Cores:	8, memory: 16 GB:
 
-- CSV files for Lucene: https://github.com/user-attachments/files/17681670/stats-lucene.zip
+- CSV files for Lucene: https://github.com/user-attachments/files/17871280/stats-lucene.zip
 - JFR files for Lucene: https://github.com/user-attachments/files/17681671/reports-lucene.zip
 - CSV files for JVector: https://github.com/user-attachments/files/17700307/stats-jvector.zip
 - JFR files for JVector: https://github.com/user-attachments/files/17700303/reports-jvector.zip
