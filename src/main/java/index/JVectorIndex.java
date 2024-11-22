@@ -2,7 +2,6 @@ package index;
 
 import io.github.jbellis.jvector.graph.disk.CachingGraphIndex;
 import io.github.jbellis.jvector.graph.disk.OnDiskGraphIndex;
-import io.github.jbellis.jvector.pq.PQVectors;
 import io.github.jbellis.jvector.vector.types.VectorFloat;
 import util.ProgressBar;
 import util.Records;
@@ -13,11 +12,7 @@ import io.github.jbellis.jvector.disk.ReaderSupplier;
 import io.github.jbellis.jvector.graph.GraphIndex;
 import io.github.jbellis.jvector.graph.GraphIndexBuilder;
 import io.github.jbellis.jvector.graph.GraphSearcher;
-import io.github.jbellis.jvector.graph.ListRandomAccessVectorValues;
 import io.github.jbellis.jvector.graph.RandomAccessVectorValues;
-import io.github.jbellis.jvector.graph.SearchResult;
-import io.github.jbellis.jvector.pq.CompressedVectors;
-import io.github.jbellis.jvector.pq.ProductQuantization;
 import io.github.jbellis.jvector.util.Bits;
 import io.github.jbellis.jvector.vector.VectorSimilarityFunction;
 import jvector.DataSetJVector;
@@ -25,8 +20,6 @@ import jvector.MMapReader;
 import org.apache.commons.io.FileUtils;
 import oshi.SystemInfo;
 
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -47,7 +40,7 @@ public class JVectorIndex {
 
   public record BuildParameters(int M, int beamWidth, float neighborOverflow, float alpha) {}
 
-  public record QueryParameters(int numCandidates, int pqFactor) {}
+  public record QueryParameters(int numCandidates) {}
 
   public static final class Builder implements Index.Builder {
 
@@ -153,7 +146,6 @@ public class JVectorIndex {
   public static class Querier implements Index.Querier {
     private final ReaderSupplier readerSupplier;
     private final GraphIndex graph;
-    private final Optional<CompressedVectors> compressedVectors;
     private final VectorSimilarityFunction similarityFunction;
     private final BuildParameters buildParams;
     private final QueryParameters queryParams;
@@ -163,13 +155,11 @@ public class JVectorIndex {
             DataSetJVector dataSet,
             ReaderSupplier readerSupplier,
         GraphIndex graph,
-        Optional<CompressedVectors> compressedVectors,
         VectorSimilarityFunction similarityFunction,
         BuildParameters buildParams,
         QueryParameters queryParams) {
       this.readerSupplier = readerSupplier;
       this.graph = graph;
-      this.compressedVectors = compressedVectors;
       this.similarityFunction = similarityFunction;
       this.buildParams = buildParams;
       this.queryParams = queryParams;
@@ -206,16 +196,11 @@ public class JVectorIndex {
       
       // TODO ... check this rows
       var cachingGraph = new CachingGraphIndex(onDiskGraph);
-      var compressedVectors =
-          compressedVectors(
-                  queryVectors.baseVectorsArray(),
-              indexPath, dimensions, queryParams.pqFactor, cachingGraph, vectorSimilarityFunction);
 
       return new JVectorIndex.Querier(
               queryVectors,
           readerSupplier,
           cachingGraph,
-          compressedVectors,
           vectorSimilarityFunction,
           buildParams,
           queryParams);
@@ -252,76 +237,12 @@ public class JVectorIndex {
     @Override
     public String description() {
       return String.format(
-          "jvector_vamana_M:%s-beamWidth:%s-neighborOverflow:%s-alpha:%s_numCandidates:%s-pqFactor:%s",
+          "jvector_vamana_M:%s-beamWidth:%s-neighborOverflow:%s-alpha:%s_numCandidates:%s",
           buildParams.M,
           buildParams.beamWidth,
           buildParams.neighborOverflow,
           buildParams.alpha,
-          queryParams.numCandidates,
-          queryParams.pqFactor);
-    }
-
-    private static Optional<CompressedVectors> compressedVectors(
-            List<VectorFloat<?>> baseVectors,
-            Path indexPath,
-            int dimensions,
-            int pqFactor,
-            GraphIndex graph,
-            VectorSimilarityFunction vectorSimilarityFunction)
-        throws IOException {
-      if (pqFactor <= 0) {
-        return Optional.empty();
-      }
-
-      var compressedVectorsFile =
-          indexPath.resolve(String.format(COMPRESSED_VECTOR_FILE_FORMAT, pqFactor));
-      if (compressedVectorsFile.toFile().exists()) {
-        try (var reader = new MMapReaderSupplier(compressedVectorsFile)) {
-          return Optional.of(PQVectors.load(reader.get(), 0));
-        }
-      }
-
-      var pqDims = dimensions / pqFactor;
-
-      System.out.println(
-          "index configured with pqFactor of {}, building codebook with {} dimensions" +
-          pqFactor +
-          pqDims);
-
-      int clusterCount = 256;
-      
-      var pqStart = Instant.now();
-      var pq =
-          ProductQuantization.compute(
-              new ListRandomAccessVectorValues(baseVectors, dimensions),
-              pqDims,
-              clusterCount,
-              vectorSimilarityFunction == VectorSimilarityFunction.EUCLIDEAN);
-      var pqEnd = Instant.now();
-      System.out.println("built codebooks in {}" +  Duration.between(pqStart, pqEnd));
-
-      System.out.println("beginning to quantize vectors");
-      var quantizeStart = Instant.now();
-      var quantizedVectors = pq.encodeAll(baseVectors);
-      
-      var compressedVectors = new PQVectors(pq, quantizedVectors);
-      var quantizeEnd = Instant.now();
-      System.out.println(
-          "quantized vectors in {}, compressed size: {}" + 
-          Duration.between(quantizeStart, quantizeEnd) +
-          compressedVectors.getCompressedSize()
-      );
-
-      System.out.println("writing quantized vectors to disk");
-      var writeStart = Instant.now();
-      try (var output =
-          new DataOutputStream(new FileOutputStream(compressedVectorsFile.toFile()))) {
-        compressedVectors.write(output);
-      }
-      var writeEnd = Instant.now();
-      System.out.println("wrote quantized vectors in {}" +  Duration.between(writeStart, writeEnd));
-
-      return Optional.of(compressedVectors);
+          queryParams.numCandidates);
     }
   }
 

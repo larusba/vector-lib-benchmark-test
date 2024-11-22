@@ -9,5 +9,4 @@ build:
   alpha: 0.2
 query:
   numCandidates: 1
-  pqFactor: 20
 k: 10

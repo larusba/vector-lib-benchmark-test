@@ -26,7 +26,7 @@ dataset: <datasetName>
 provider: <provider>
 runtime:
   jfr: <boolean>
-build:
+build
   <build provider configuration>
 query:
   <query provider configuration>
@@ -38,8 +38,8 @@ and put into `/hdf5` folder.
 
 So far, the datasets used for this project are:
 
-- `glove-100-angular.hdf5` (which has dimensions: 100, train size 1,183,514, test size 10,000  and use Angular Distance)
-- `gist-960-euclidean.hdf5` (which has dimensions: 100, train size 1,183,514, test size 10,000 and use Euclidean Distance)
+- `glove-100-angular.hdf5` (which has dimensions: 100, train size 1,183,514, test size 10,000 and use Angular Distance)
+- `gist-960-euclidean.hdf5` (which has dimensions: 960, train size 1,000,000, test size 1,000 and use Euclidean Distance)
 - `sift-128-euclidean` (which has dimensions: 128, train size 1,000,000, test size 10,000 and use Euclidean Distance)
 
 All these dataset include ground truth data for the top-100 nearest neighbors.
@@ -97,11 +97,6 @@ Influences the search’s breadth by setting the number of possible neighbors to
 - **High `numCandidates`**: Increases the likelihood of retrieving the closest matches but may slow down the query.
 - **Low `numCandidates`**: Improves query speed and reduces memory usage, though potentially at the cost of accuracy.
 
-#### `pqFactor`
-Determines the level of compression in vector representation, impacting both search speed and accuracy.
-
-- **High `pqFactor`**: Increases compression, leading to faster but potentially less precise results.
-- **Low `pqFactor`**: Retains more detail in the vectors, enhancing accuracy but at the cost of additional memory and processing.
 
 
 For example, using the `glove-100-angular.hdf5` dataset:
@@ -117,7 +112,6 @@ build:
   alpha: 0.8
 query:
   numCandidates: 3
-  pqFactor: 15
 k: 10
 ```
 
@@ -209,7 +203,7 @@ These are the results that are obtained with a MacBook Air, with Apple M3 proces
 
 - CSV files for Lucene: https://github.com/user-attachments/files/17681670/stats-lucene.zip
 - JFR files for Lucene: https://github.com/user-attachments/files/17681671/reports-lucene.zip
-- CSV files for JVector: https://github.com/user-attachments/files/17681705/stats-jvector.zip
-- JFR files for JVector: https://github.com/user-attachments/files/17681706/reports-jvector.zip
+- CSV files for JVector: https://github.com/user-attachments/files/17700307/stats-jvector.zip
+- JFR files for JVector: https://github.com/user-attachments/files/17700303/reports-jvector.zip
 
 
