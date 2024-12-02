@@ -3,10 +3,10 @@ provider: jvector
 runtime:
   jfr: true
 build:
-  beamWidth: 10
-  M: 1
-  neighborOverflow: 0.61
-  alpha: 0.8
+  beamWidth: 100
+  M: 16
+  neighborOverflow: 2.0
+  alpha: 1.2
 query:
-  numCandidates: 3
+  numCandidates: 100
 k: 10

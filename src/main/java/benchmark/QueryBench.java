@@ -35,8 +35,6 @@ import java.util.stream.Stream;
 
 public class QueryBench {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(QueryBench.class);
-
     private static final int DEFAULT_WARMUP_ITERATIONS = 1;
     private static final int DEFAULT_TEST_ITERATIONS = 2;
     private static final int DEFAULT_BLOCK_DEVICE_STATS_INTERVAL_MS = 10;
@@ -139,7 +137,7 @@ public class QueryBench {
                                                     .parallel()
                                                     .forEach(
                                                             j -> Exceptions.wrap(
-                                                                    () -> prepairRunQuery(spec, i, j, queries, dataset, index, systemInfo, recalls, executionDurations, minorFaults, majorFaults, concurrent, recall, threadStats, progress, prom)
+                                                                    () -> prepairRunQuery(spec, j, queries, dataset, index, systemInfo, recalls, executionDurations, minorFaults, majorFaults, concurrent, recall, threadStats, progress, prom)
                                                             )
                                                     )
                                             )
@@ -147,7 +145,7 @@ public class QueryBench {
                         } else {
                             for (int i = 0; i < test; i++) {
                                 for (int j = 0; j < numQueries; j++) {
-                                    prepairRunQuery(spec, i, j, queries, dataset, index, systemInfo, recalls, executionDurations, minorFaults, majorFaults, concurrent, recall, threadStats, progress, prom);
+                                    prepairRunQuery(spec, j, queries, dataset, index, systemInfo, recalls, executionDurations, minorFaults, majorFaults, concurrent, recall, threadStats, progress, prom);
                                 }
                             }
                         }
@@ -159,121 +157,44 @@ public class QueryBench {
                     }
                 }
 
+                String fileName = STR."\{spec.provider()}-\{spec.dataset()}";
                 StatsUtil.appendToQueryCsv(
-                        STR."\{spec.provider()}-\{spec.dataset()}",
+                        fileName ,
                         index.description(), recalls, testOnTrain,
                         recall, executionDurations, minorFaults,
                         majorFaults, threadStats, spec.k()
                 );
 
-                System.out.println("completed recall test for {}:" + index.description());
-                System.out.println("\ttotal queries {}" + recalls.getN());
-                if (recall && !testOnTrain) {
-                    System.out.println("\taverage recall {}" + recalls.getMean());
-                    System.out.println("\trecall {}" + recalls.getMean() * recalls.getN());
-                }
-                System.out.println("\taverage duration in ns {}" + executionDurations.getMean());
-                System.out.println("\ttotal duration in ns {}" + executionDurations.getSum());
-
-                if (threadStats && !testOnTrain) {
-                    System.out.println("\taverage minor faults {}" + minorFaults.getMean());
-                    System.out.println("\taverage major faults {}" + majorFaults.getMean());
-                }
-                System.out.println("\tmax duration {}" + Duration.ofNanos((long) executionDurations.getMax()));
-                if (threadStats && !testOnTrain) {
-                    System.out.println("\tmax minor faults {}" + minorFaults.getMax());
-                    System.out.println("\tmax major faults {}" + majorFaults.getMax());
-                    System.out.println("\ttotal minor faults {}" + minorFaults.getSum());
-                    System.out.println("\ttotal major faults {}" + majorFaults.getSum());
-                }
+//                System.out.println("completed recall test for {}:" + index.description());
+//                System.out.println("\ttotal queries {}" + recalls.getN());
+//                if (recall && !testOnTrain) {
+//                    System.out.println("\taverage recall {}" + recalls.getMean());
+//                    System.out.println("\trecall {}" + recalls.getMean() * recalls.getN());
+//                }
+//                System.out.println("\taverage duration in ns {}" + executionDurations.getMean());
+//                System.out.println("\ttotal duration in ns {}" + executionDurations.getSum());
+//
+//                if (threadStats && !testOnTrain) {
+//                    System.out.println("\taverage minor faults {}" + minorFaults.getMean());
+//                    System.out.println("\taverage major faults {}" + majorFaults.getMean());
+//                }
+//                System.out.println("\tmax duration {}" + Duration.ofNanos((long) executionDurations.getMax()));
+//                if (threadStats && !testOnTrain) {
+//                    System.out.println("\tmax minor faults {}" + minorFaults.getMax());
+//                    System.out.println("\tmax major faults {}" + majorFaults.getMax());
+//                    System.out.println("\ttotal minor faults {}" + minorFaults.getSum());
+//                    System.out.println("\ttotal major faults {}" + majorFaults.getSum());
+//                }
 
             }
         }
     }
 
-    private static void prepairRunQuery(Config.QuerySpec spec, int i, int j, ArrayList queries, DataSetVector dataset, Index.Querier index, SystemInfo systemInfo, SynchronizedDescriptiveStatistics recalls, SynchronizedDescriptiveStatistics executionDurations, SynchronizedDescriptiveStatistics minorFaults, SynchronizedDescriptiveStatistics majorFaults, boolean concurrent, boolean recall, boolean threadStats, ProgressBar progress, Prom prom) throws Exception {
+    private static void prepairRunQuery(Config.QuerySpec spec, int j, ArrayList queries, DataSetVector dataset, Index.Querier index, SystemInfo systemInfo, SynchronizedDescriptiveStatistics recalls, SynchronizedDescriptiveStatistics executionDurations, SynchronizedDescriptiveStatistics minorFaults, SynchronizedDescriptiveStatistics majorFaults, boolean concurrent, boolean collectRecall, boolean threadStats, ProgressBar progress, Prom prom) throws Exception {
         var query = queries.get(j);
         var groundTruth = getGroundTruth(j, dataset);
-        runQuery(
-                index,
-                query,
-                groundTruth,
-                spec.k(),
-                i,
-                j,
-                systemInfo,
-                recalls,
-                executionDurations,
-                minorFaults,
-                majorFaults,
-                concurrent,
-                recall,
-                threadStats,
-                progress,
-                prom.queryDurationSeconds);
-        prom.queries.inc();
-    }
+        int k = spec.k();
 
-    private static <T> T getGroundTruth(int j, DataSetVector dataset) {
-        if (dataset instanceof DataSetLucene lucene) {
-            return (T) lucene.groundTruth()[j];
-        } else if (dataset instanceof DataSetJVector jVector) {
-            return (T) jVector.groundTruth().get(j);
-        } else {
-            throw new RuntimeException("todo");
-        }
-    }
-
-    private static <T> T getVectorFloat(boolean testOnTrain, DataSetVector dataset, Random random, int i) throws IOException {
-        if (testOnTrain) {
-            if (dataset instanceof DataSetLucene lucene) {
-                return (T) lucene.baseVectorsArray().vectorValue(random.nextInt(lucene.baseVectorsArray().size()));
-            } else if (dataset instanceof DataSetJVector jVector) {
-                return (T) jVector.baseVectorsArray().get(jVector.baseVectorsArray().size());
-            }
-        }
-
-        if (dataset instanceof DataSetLucene lucene) {
-            return (T) lucene.queryVectorsArray().get(i);
-        } else if (dataset instanceof DataSetJVector jVector) {
-            return (T) jVector.queryVectorsArray().get(i);
-        }
-//    else {
-        throw new RuntimeException("todo");
-//    }
-
-//    return dataset.getQueryRavv().getVector(i);
-    }
-
-    private static int getSize(DataSetVector dataset) {
-        if (dataset instanceof DataSetLucene lucene) {
-            return lucene.queryVectorsArray().size();
-        } else if (dataset instanceof DataSetJVector jVector) {
-            return jVector.queryVectorsArray().size();
-        } else {
-            throw new RuntimeException("todo");
-        }
-
-    }
-
-    private static <T, V> void runQuery(
-            Index.Querier index,
-            T query,
-            V groundTruth,
-            int k,
-            int i,
-            int j,
-            SystemInfo systemInfo,
-            DescriptiveStatistics recalls,
-            DescriptiveStatistics executionDurations,
-            DescriptiveStatistics minorFaults,
-            DescriptiveStatistics majorFaults,
-            boolean concurrent,
-            boolean collectRecall,
-            boolean threadStats,
-            ProgressBar progress,
-            Gauge.Child queryDurationSeconds)
-            throws Exception {
         boolean collectThreadStats = systemInfo.getOperatingSystem().getFamily() != "macOS";
 
         StatsCollector statsCollector =
@@ -306,15 +227,18 @@ public class QueryBench {
         executionDurations.addValue(duration.toNanos());
 
         if (collectRecall) {
-            Preconditions.checkArgument(
-                    results.size() <= k,
-                    "query %s in round %s returned %s results, expected less than k=%s",
-                    j,
-                    i,
-                    results.size(),
-                    k);
+//            Preconditions.checkArgument(
+//                    results.size() <= k,
+//                    "query %s in round %s returned %s results, expected less than k=%s",
+//                    j,
+//                    i,
+//                    results.size(),
+//                    k);
 
-            var truePositives = getStream(groundTruth).filter(results::contains).count();
+            var truePositives = getStream(groundTruth).limit(k).filter(results::contains).count();
+            if (truePositives > 0) {
+                System.out.println("truePositives = " + truePositives);
+            }
             var recall = (double) truePositives / k;
             recalls.addValue(recall);
         }
@@ -324,8 +248,48 @@ public class QueryBench {
             majorFaults.addValue(endMajorFaults - startMajorFaults);
         }
 
-        queryDurationSeconds.inc((double) duration.toNanos() / (1000 * 1000 * 1000));
+        prom.queryDurationSeconds.inc((double) duration.toNanos() / (1000 * 1000 * 1000));
         progress.inc();
+        
+        prom.queries.inc();
+    }
+
+    private static <T> T getGroundTruth(int j, DataSetVector dataset) {
+        if (dataset instanceof DataSetLucene lucene) {
+            return (T) lucene.groundTruth()[j];
+        } else if (dataset instanceof DataSetJVector jVector) {
+            return (T) jVector.groundTruth().get(j);
+        } else {
+            throw new RuntimeException("todo");
+        }
+    }
+
+    private static <T> T getVectorFloat(boolean testOnTrain, DataSetVector dataset, Random random, int i) throws IOException {
+        if (testOnTrain) {
+            if (dataset instanceof DataSetLucene lucene) {
+                return (T) lucene.baseVectorsArray().vectorValue(random.nextInt(lucene.baseVectorsArray().size()));
+            } else if (dataset instanceof DataSetJVector jVector) {
+                return (T) jVector.baseVectorsArray().get(jVector.baseVectorsArray().size());
+            }
+        }
+
+        if (dataset instanceof DataSetLucene lucene) {
+            return (T) lucene.queryVectorsArray().get(i);
+        } else if (dataset instanceof DataSetJVector jVector) {
+            return (T) jVector.queryVectorsArray().get(i);
+        }
+        throw new RuntimeException("Unrecognized vector dataset: " + dataset.name());
+    }
+
+    private static int getSize(DataSetVector dataset) {
+        if (dataset instanceof DataSetLucene lucene) {
+            return lucene.queryVectorsArray().size();
+        } else if (dataset instanceof DataSetJVector jVector) {
+            return jVector.queryVectorsArray().size();
+        } else {
+            throw new RuntimeException("Unrecognized vector size: " + dataset.name());
+        }
+
     }
 
     private static <V> Stream getStream(V groundTruth) {

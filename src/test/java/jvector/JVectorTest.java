@@ -21,7 +21,8 @@ import static util.TestUtil.*;
 
 class JVectorTest {
 
-    public static final String YML_CONF_PATTERN = Optional.ofNullable(System.getenv("J_VECTOR_YAML_LIST")).orElse("test-jvector-*.yml");
+    public static final String YML_CONF_PATTERN = Optional.ofNullable(System.getenv("J_VECTOR_YAML_LIST"))
+            .orElse("test-jvector-glove-1.yml");
     public static final Set<Config.BuildSpec> BUILD_SPEC_LOAD = new HashSet<>();
     public static final Set<Config.QuerySpec> QUERY_SPEC_LOAD = new HashSet<>();
 

@@ -1,7 +1,10 @@
 package index;
 
+import io.github.jbellis.jvector.graph.SearchResult;
 import io.github.jbellis.jvector.graph.disk.CachingGraphIndex;
 import io.github.jbellis.jvector.graph.disk.OnDiskGraphIndex;
+import io.github.jbellis.jvector.graph.similarity.ScoreFunction;
+import io.github.jbellis.jvector.graph.similarity.SearchScoreProvider;
 import io.github.jbellis.jvector.vector.types.VectorFloat;
 import util.ProgressBar;
 import util.Records;
@@ -138,7 +141,7 @@ public class JVectorIndex {
 
     private static String buildDescription(BuildParameters buildParams) {
       return String.format(
-          "jvector_vamana_M:%s-beamWidth:%s-neighborOverflow:%s-alpha:%s",
+          "jvector|M:%s-beamWidth:%s-neighborOverflow:%s-alpha:%s",
           buildParams.M, buildParams.beamWidth, buildParams.neighborOverflow, buildParams.alpha);
     }
   }
@@ -196,7 +199,7 @@ public class JVectorIndex {
       
       // TODO ... check this rows
       var cachingGraph = new CachingGraphIndex(onDiskGraph);
-
+// OnDiskGraphIndex(size=1183514, entryPoint=684218, features=INLINE_VECTORS)
       return new JVectorIndex.Querier(
               queryVectors,
           readerSupplier,
@@ -205,11 +208,75 @@ public class JVectorIndex {
           buildParams,
           queryParams);
     }
+    
+//    private Object querySimilarity(float[] vector, GraphIndex.View<float[]> view) {
+//      if (this.compressedVectors.isEmpty()) {
+//        return new QuerySimilarity(
+//                (ScoreFunction.ExactScoreFunction) (i -> this.similarityFunction.compare(vector, view.getVector(i))),
+//                null);
+//      }
+//
+//      return new QuerySimilarity(
+//              compressedVectors.get().approximateScoreFunctionFor(vector, this.similarityFunction),
+//              (i, vectors) -> this.similarityFunction.compare(vector, vectors.get(i)));
+//    }
 
     @Override
     public List<Integer> query(Object vectorObj, int k, boolean ensureIds) throws IOException {
+      var view = this.graph.getView();
       VectorFloat<?> vector = (VectorFloat<?>) vectorObj;
 
+//      var searcher = new GraphSearcher.Builder<>(view).build();
+//      var results =
+//              searcher.search(
+//                      1,
+//                      1,
+//                      queryParams.numCandidates,
+//                      Bits.ALL);
+
+//      (ExactScoreFunction) (i -> this.similarityFunction.compare(vector, view.getVector(i)))
+
+      /*
+      VectorFloat<?> vector1 = ((CachingGraphIndex.View) view).view.getVector(0);
+float compare = this.similarityFunction.compare(vector, vector1);
+
+
+var sf = new ScoreFunction.ExactScoreFunction() {
+    @Override
+    public float similarityTo(int node2) {
+        return compare;
+    }
+};
+
+SearchScoreProvider ssp = new SearchScoreProvider(sf);
+
+searcher.search(ssp, queryParams.numCandidates, queryParams.numCandidates, 0.4F, 1.0F, Bits.ALL)
+       */
+      
+      
+//      SearchResult results;
+//      try (var searcher = new GraphSearcher(graph)) {
+////        var ssp =   SearchScoreProvider.exact(vector, similarityFunction, dataSet.getBaseRavv());
+////        var sf = new ScoreFunction.ExactScoreFunction() {
+////          @Override
+////          public float similarityTo(int node2) {
+////            return similarityFunction.compare(vector,  ((CachingGraphIndex.View) view).view.getVector(0) );
+////          }
+////        };
+////        SearchScoreProvider ssp = new SearchScoreProvider(sf);
+//
+//        var sf = new ScoreFunction.ExactScoreFunction() {
+//          @Override
+//          public float similarityTo(int node2) {
+//            float compare = similarityFunction.compare(vector, dataSet.getBaseRavv().getVector(node2));
+////            System.out.println("compare = " + compare);
+//            return compare;
+//          }
+//        };
+//        SearchScoreProvider ssp = new SearchScoreProvider(sf);
+//        results = searcher.search(ssp, 10000, Bits.ALL);
+//      }
+      
       var results =
           GraphSearcher.search(
                   vector, 
@@ -218,10 +285,12 @@ public class JVectorIndex {
                   similarityFunction, 
                   graph,
                   Bits.ALL);
+
+//      System.out.println("Querier.query");
       
       return Arrays.stream(results.getNodes())
           .map(nodeScore -> {
-            System.out.println("nodeScore = " + nodeScore);
+//            System.out.println("nodeScore = " + nodeScore);
             return nodeScore.node;
           })
           .limit(k)
@@ -237,7 +306,7 @@ public class JVectorIndex {
     @Override
     public String description() {
       return String.format(
-          "jvector_vamana_M:%s-beamWidth:%s-neighborOverflow:%s-alpha:%s_numCandidates:%s",
+          "jvector|M:%s-beamWidth:%s-neighborOverflow:%s-alpha:%s_numCandidates:%s",
           buildParams.M,
           buildParams.beamWidth,
           buildParams.neighborOverflow,

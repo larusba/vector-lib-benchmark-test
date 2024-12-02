@@ -4,11 +4,11 @@ runtime:
   jfr: true
   testOnTrain: false
 build:
-  maxConn: 20
-  beamWidth: 3
+  maxConn: 16
+  beamWidth: 75
   scalarQuantization: false
   numThreads: 5
   forceMerge: 0
 query:
-  numCandidates: 3
+  numCandidates: 150
 k: 10
