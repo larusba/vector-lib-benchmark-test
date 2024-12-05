@@ -174,7 +174,7 @@ build:
   maxConn: 36
   beamWidth: 50
   scalarQuantization: false
-  numThreads: 5
+  numThreads: 8
   forceMerge: 0
 query:
   numCandidates: 23
@@ -195,4 +195,34 @@ These are the results that are obtained with a MacBook Air, with Apple M3 proces
 - CSV files for JVector: https://github.com/user-attachments/files/17700307/stats-jvector.zip
 - JFR files for JVector: https://github.com/user-attachments/files/17700303/reports-jvector.zip
 
+
+The build CSV output contains:
+- `Index configs`: that is `PROVIDER-buildConfig`
+- `Total Duration (sec)`
+- `Phases`: duration of all phases
+- `Build Phase Duration (sec)`
+- `Commit Phase Duration (sec)`
+- `Merge Phase Duration (sec)`
+- `Index Dir. Size`
+- `Ram Usage (GB)`
+- `Available Memory (GB)`
+
+The query CSV output contains:
+- `Index configs`: that is `PROVIDER-<buildConfig>-<queryConfig>`
+- `Total Duration (ns)`
+- `Avg Recall`: the average value of `relevant results / all retrieved results` 
+- `Avg Precision`: the average value of `relevant results / all available results` (i.e. the size of Neighbors of the dataset)
+- `k`
+- `Total Queries`
+- `Queries Per Second`:  `Total Queries / Total Duration (sec)` 
+- `Avg Duration`: the average duration of the queries
+- `Avg Minor Faults`: in case of failures
+- `Avg Major Faults`: in case of failures
+- `Maximum Query Duration`
+- `Maximum Minor Faults`: in case of failures
+- `Maximum Major Faults`: in case of failures
+- `Total Minor Faults`: in case of failures
+- `Total Major Faults`: in case of failures
+- `Ram Usage (GB)`
+- `Available Memory (GB)`
 
