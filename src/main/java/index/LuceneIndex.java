@@ -237,9 +237,6 @@ public final class LuceneIndex {
 
       var query = new KnnVectorQuery(VECTOR_FIELD, vector, queryParams.numCandidates);
       var results = this.searcher.search(query, queryParams.numCandidates);
-      
-//      for (LeafReaderContext ctx : reader.leaves()) {
-//        TopDocs results = LuceneUtil.doKnnSearch(ctx.reader(), VECTOR_FIELD, vector, queryParams.numCandidates, 1);
 
         for (int i = 0; i < k && i < results.scoreDocs.length; i++) {
           var result = results.scoreDocs[i];
@@ -251,12 +248,10 @@ public final class LuceneIndex {
                           .numericValue()
                           .intValue()
                       : result.doc;
-//          var id = result.doc;
           ids.add(id);
         }
-//      }
 
-      return ids;//.stream().limit(k).toList();
+      return ids;
     }
 
     @Override

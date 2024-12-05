@@ -198,74 +198,10 @@ public class JVectorIndex {
           buildParams,
           queryParams);
     }
-    
-//    private Object querySimilarity(float[] vector, GraphIndex.View<float[]> view) {
-//      if (this.compressedVectors.isEmpty()) {
-//        return new QuerySimilarity(
-//                (ScoreFunction.ExactScoreFunction) (i -> this.similarityFunction.compare(vector, view.getVector(i))),
-//                null);
-//      }
-//
-//      return new QuerySimilarity(
-//              compressedVectors.get().approximateScoreFunctionFor(vector, this.similarityFunction),
-//              (i, vectors) -> this.similarityFunction.compare(vector, vectors.get(i)));
-//    }
 
     @Override
     public List<Integer> query(Object vectorObj, int k, boolean ensureIds) throws IOException {
-      var view = this.graph.getView();
       VectorFloat<?> vector = (VectorFloat<?>) vectorObj;
-
-//      var searcher = new GraphSearcher.Builder<>(view).build();
-//      var results =
-//              searcher.search(
-//                      1,
-//                      1,
-//                      queryParams.numCandidates,
-//                      Bits.ALL);
-
-//      (ExactScoreFunction) (i -> this.similarityFunction.compare(vector, view.getVector(i)))
-
-      /*
-      VectorFloat<?> vector1 = ((CachingGraphIndex.View) view).view.getVector(0);
-float compare = this.similarityFunction.compare(vector, vector1);
-
-
-var sf = new ScoreFunction.ExactScoreFunction() {
-    @Override
-    public float similarityTo(int node2) {
-        return compare;
-    }
-};
-
-SearchScoreProvider ssp = new SearchScoreProvider(sf);
-
-searcher.search(ssp, queryParams.numCandidates, queryParams.numCandidates, 0.4F, 1.0F, Bits.ALL)
-       */
-      
-      
-//      SearchResult results;
-//      try (var searcher = new GraphSearcher(graph)) {
-////        var ssp =   SearchScoreProvider.exact(vector, similarityFunction, dataSet.getBaseRavv());
-////        var sf = new ScoreFunction.ExactScoreFunction() {
-////          @Override
-////          public float similarityTo(int node2) {
-////            return similarityFunction.compare(vector,  ((CachingGraphIndex.View) view).view.getVector(0) );
-////          }
-////        };
-////        SearchScoreProvider ssp = new SearchScoreProvider(sf);
-//
-//        var sf = new ScoreFunction.ExactScoreFunction() {
-//          @Override
-//          public float similarityTo(int node2) {
-//            float compare = similarityFunction.compare(vector, dataSet.getBaseRavv().getVector(node2));
-////            System.out.println("compare = " + compare);
-//            return compare;
-//          }
-//        };
-//        SearchScoreProvider ssp = new SearchScoreProvider(sf);
-//        results = searcher.search(ssp, 10000, Bits.ALL);
-//      }
       
       var results =
           GraphSearcher.search(
@@ -276,7 +212,6 @@ searcher.search(ssp, queryParams.numCandidates, queryParams.numCandidates, 0.4F,
                   graph,
                   Bits.ALL);
 
-//      System.out.println("Querier.query");
       
       return Arrays.stream(results.getNodes())
           .map(nodeScore -> nodeScore.node)

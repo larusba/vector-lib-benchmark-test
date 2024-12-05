@@ -227,7 +227,6 @@ public class QueryBench {
 
             Pair<Stream, Integer> groundTruthStreamSize = getGroundTruthStreamAndSize(groundTruth);
             var truePositives = groundTruthStreamSize.getFirst()
-//                    .limit(k)
                     .filter(results::contains).count();
             var precision = (double) truePositives / k;
             precisions.addValue(precision);

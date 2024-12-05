@@ -84,14 +84,10 @@ public class StatsUtil {
             throw new RuntimeException(e);
         }
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(csvOutputFile, true))) {
-//        try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
             String csv = convertToCSV(dataLines);
             bw.append(csv);
             bw.newLine();
             bw.flush();
-//            Arrays.stream(dataLines)
-//                    .map(StatsUtil::convertToCSV)
-//                    .forEach(pw::println);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
