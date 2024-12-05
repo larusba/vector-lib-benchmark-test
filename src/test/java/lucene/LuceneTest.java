@@ -23,43 +23,27 @@ import static util.TestUtil.*;
 class LuceneTest {
 
     public static final String YML_CONF_PATTERN = Optional.ofNullable(System.getenv("LUCENE_YAML_LIST"))
-            .orElse("test-lucene-glove-1.yml");
+            .orElse("test-lucene-glove.yml");
     public static final Set<Config.BuildSpec> BUILD_SPEC_LOAD = new HashSet<>();
     public static final Set<Config.QuerySpec> QUERY_SPEC_LOAD = new HashSet<>();
 
     @BeforeAll
     static void setUp() throws IOException {
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Path.of("conf/"), YML_CONF_PATTERN)) {
-            for (Path yml: stream) {
-                try {
-                    BUILD_SPEC_LOAD.add(Config.BuildSpec.load(yml.getFileName().toString()));
-                    QUERY_SPEC_LOAD.add(Config.QuerySpec.load(yml.getFileName().toString()));
-                } catch (Exception e){
-                    System.out.println(STR."unexpected exception during the \{yml} config load...");
-                    System.out.println(e.getMessage());
-                }
-            }
-        }
+        loadConfigs(BUILD_SPEC_LOAD, QUERY_SPEC_LOAD, YML_CONF_PATTERN);
     }
     
     @Test
     @Order(1)
     void testLuceneBuild() throws Exception {
-        BUILD_SPEC_LOAD.stream()
-                .map(spec -> STR."\{spec.provider()}-\{spec.dataset()}")
-                .forEach(StatsUtil::initBuildStatsCsv);
         BUILD_SPEC_LOAD.forEach(
-                load -> Assertions.assertDoesNotThrow(
-                        () -> BuildBench.build(load, datasetPath, indexesPath, reportsPath)
+                spec -> Assertions.assertDoesNotThrow(
+                        () -> BuildBench.build(spec, datasetPath, indexesPath, reportsPath)
                 )
         );
     }
     
     @Test
     void testLuceneQuery() throws Exception {
-        QUERY_SPEC_LOAD.stream()
-                .map(spec -> STR."\{spec.provider()}-\{spec.dataset()}")
-                .forEach(StatsUtil::initQueryStatsCsv);
         QUERY_SPEC_LOAD.forEach(
                 load -> Assertions.assertDoesNotThrow(
                         () -> QueryBench.test(load, datasetPath, indexesPath, reportsPath)

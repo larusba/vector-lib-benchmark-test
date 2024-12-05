@@ -1,6 +1,7 @@
 package benchmark;
 
 import io.prometheus.client.CollectorRegistry;
+import org.apache.commons.math3.util.Pair;
 import util.ProgressBar;
 import index.Index;
 import util.Config;
@@ -12,10 +13,7 @@ import io.prometheus.client.hotspot.DefaultExports;
 import jdk.jfr.Configuration;
 import jdk.jfr.Recording;
 import jvector.DataSetJVector;
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.descriptive.SynchronizedDescriptiveStatistics;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import oshi.SystemInfo;
 import oshi.software.os.OSProcess;
 import oshi.software.os.OSThread;
@@ -33,6 +31,9 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static index.JVectorIndex.JVECTOR_PREFIX;
+import static index.LuceneIndex.LUCENE_PREFIX;
+
 public class QueryBench {
 
     private static final int DEFAULT_WARMUP_ITERATIONS = 1;
@@ -42,6 +43,8 @@ public class QueryBench {
 
     public static void test(Config.QuerySpec spec, Path datasetsPath, Path indexesPath, Path reportsPath)
             throws Exception {
+        StatsUtil.initQueryStatsCsv(STR."\{spec.provider()}-\{spec.dataset()}");
+        
         var dataset = DataSetVector.load(spec.provider(), datasetsPath, spec.dataset());
         try (
                 var index = Index.Querier
@@ -73,6 +76,7 @@ public class QueryBench {
                 }
 
                 var recalls = new SynchronizedDescriptiveStatistics();
+                var precisions = new SynchronizedDescriptiveStatistics();
                 var executionDurations = new SynchronizedDescriptiveStatistics();
                 var minorFaults = new SynchronizedDescriptiveStatistics();
                 var majorFaults = new SynchronizedDescriptiveStatistics();
@@ -137,7 +141,7 @@ public class QueryBench {
                                                     .parallel()
                                                     .forEach(
                                                             j -> Exceptions.wrap(
-                                                                    () -> prepairRunQuery(spec, j, queries, dataset, index, systemInfo, recalls, executionDurations, minorFaults, majorFaults, concurrent, recall, threadStats, progress, prom)
+                                                                    () -> prepairRunQuery(spec, j, queries, dataset, index, systemInfo, recalls, precisions, executionDurations, minorFaults, majorFaults, concurrent, recall, threadStats, progress, prom)
                                                             )
                                                     )
                                             )
@@ -145,7 +149,7 @@ public class QueryBench {
                         } else {
                             for (int i = 0; i < test; i++) {
                                 for (int j = 0; j < numQueries; j++) {
-                                    prepairRunQuery(spec, j, queries, dataset, index, systemInfo, recalls, executionDurations, minorFaults, majorFaults, concurrent, recall, threadStats, progress, prom);
+                                    prepairRunQuery(spec, j, queries, dataset, index, systemInfo, recalls, precisions, executionDurations, minorFaults, majorFaults, concurrent, recall, threadStats, progress, prom);
                                 }
                             }
                         }
@@ -158,39 +162,27 @@ public class QueryBench {
                 }
 
                 String fileName = STR."\{spec.provider()}-\{spec.dataset()}";
+                String description = StatsUtil.getCsvDescription(index.description());
                 StatsUtil.appendToQueryCsv(
                         fileName ,
-                        index.description(), recalls, testOnTrain,
+                        description, recalls, precisions, testOnTrain,
                         recall, executionDurations, minorFaults,
                         majorFaults, threadStats, spec.k()
                 );
-
-//                System.out.println("completed recall test for {}:" + index.description());
-//                System.out.println("\ttotal queries {}" + recalls.getN());
-//                if (recall && !testOnTrain) {
-//                    System.out.println("\taverage recall {}" + recalls.getMean());
-//                    System.out.println("\trecall {}" + recalls.getMean() * recalls.getN());
-//                }
-//                System.out.println("\taverage duration in ns {}" + executionDurations.getMean());
-//                System.out.println("\ttotal duration in ns {}" + executionDurations.getSum());
-//
-//                if (threadStats && !testOnTrain) {
-//                    System.out.println("\taverage minor faults {}" + minorFaults.getMean());
-//                    System.out.println("\taverage major faults {}" + majorFaults.getMean());
-//                }
-//                System.out.println("\tmax duration {}" + Duration.ofNanos((long) executionDurations.getMax()));
-//                if (threadStats && !testOnTrain) {
-//                    System.out.println("\tmax minor faults {}" + minorFaults.getMax());
-//                    System.out.println("\tmax major faults {}" + majorFaults.getMax());
-//                    System.out.println("\ttotal minor faults {}" + minorFaults.getSum());
-//                    System.out.println("\ttotal major faults {}" + majorFaults.getSum());
-//                }
 
             }
         }
     }
 
-    private static void prepairRunQuery(Config.QuerySpec spec, int j, ArrayList queries, DataSetVector dataset, Index.Querier index, SystemInfo systemInfo, SynchronizedDescriptiveStatistics recalls, SynchronizedDescriptiveStatistics executionDurations, SynchronizedDescriptiveStatistics minorFaults, SynchronizedDescriptiveStatistics majorFaults, boolean concurrent, boolean collectRecall, boolean threadStats, ProgressBar progress, Prom prom) throws Exception {
+    private static void prepairRunQuery(Config.QuerySpec spec, int j, ArrayList queries, DataSetVector dataset, Index.Querier index, SystemInfo systemInfo, 
+                                        SynchronizedDescriptiveStatistics recalls,
+                                        SynchronizedDescriptiveStatistics precisions,
+                                        SynchronizedDescriptiveStatistics executionDurations, 
+                                        SynchronizedDescriptiveStatistics minorFaults, 
+                                        SynchronizedDescriptiveStatistics majorFaults, 
+                                        boolean concurrent, boolean collectRecall, boolean threadStats, 
+                                        ProgressBar progress, 
+                                        Prom prom) throws Exception {
         var query = queries.get(j);
         var groundTruth = getGroundTruth(j, dataset);
         int k = spec.k();
@@ -227,19 +219,20 @@ public class QueryBench {
         executionDurations.addValue(duration.toNanos());
 
         if (collectRecall) {
-//            Preconditions.checkArgument(
-//                    results.size() <= k,
-//                    "query %s in round %s returned %s results, expected less than k=%s",
-//                    j,
-//                    i,
-//                    results.size(),
-//                    k);
+            /*
+            Precision = relevant results / all retrieved results
+            
+            Recall = relevant results / all results
+             */
 
-            var truePositives = getStream(groundTruth).limit(k).filter(results::contains).count();
-            if (truePositives > 0) {
-                System.out.println("truePositives = " + truePositives);
-            }
-            var recall = (double) truePositives / k;
+            Pair<Stream, Integer> groundTruthStreamSize = getGroundTruthStreamAndSize(groundTruth);
+            var truePositives = groundTruthStreamSize.getFirst()
+//                    .limit(k)
+                    .filter(results::contains).count();
+            var precision = (double) truePositives / k;
+            precisions.addValue(precision);
+            
+            var recall = (double) truePositives / groundTruthStreamSize.getSecond();
             recalls.addValue(recall);
         }
 
@@ -260,7 +253,7 @@ public class QueryBench {
         } else if (dataset instanceof DataSetJVector jVector) {
             return (T) jVector.groundTruth().get(j);
         } else {
-            throw new RuntimeException("todo");
+            throw new RuntimeException("Unrecognized vector dataset: " + dataset.name());
         }
     }
 
@@ -292,12 +285,13 @@ public class QueryBench {
 
     }
 
-    private static <V> Stream getStream(V groundTruth) {
+    private static <V> Pair<Stream, Integer> getGroundTruthStreamAndSize(V groundTruth) {
         if (groundTruth instanceof Collection<?> set) {
-            return set.stream();
+            return Pair.create(set.stream(), set.size());
         }
         int[] groundTruthArray = (int[]) groundTruth;
-        return Arrays.stream(groundTruthArray).boxed();
+        Stream<Integer> stream = Arrays.stream(groundTruthArray).boxed();
+        return Pair.create(stream, groundTruthArray.length);
     }
 
     private static Prom startPromServer(Config.QuerySpec spec, int numQueries) throws Exception {
@@ -413,8 +407,10 @@ public class QueryBench {
         }
     }
 
-    private static int queryThreads(Map<String, String> runtime) {
-        return Optional.ofNullable(runtime.get("queryThreads")).map(Integer::parseInt).orElse(5);
+    public static int queryThreads(Map<String, String> runtime) {
+        return Optional.ofNullable(runtime.get("queryThreads"))
+                .map(Integer::parseInt)
+                .orElse(8);
     }
 
     private static int warmup(Map<String, String> runtime) {

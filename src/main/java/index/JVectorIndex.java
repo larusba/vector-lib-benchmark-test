@@ -1,10 +1,7 @@
 package index;
 
-import io.github.jbellis.jvector.graph.SearchResult;
 import io.github.jbellis.jvector.graph.disk.CachingGraphIndex;
 import io.github.jbellis.jvector.graph.disk.OnDiskGraphIndex;
-import io.github.jbellis.jvector.graph.similarity.ScoreFunction;
-import io.github.jbellis.jvector.graph.similarity.SearchScoreProvider;
 import io.github.jbellis.jvector.vector.types.VectorFloat;
 import util.ProgressBar;
 import util.Records;
@@ -21,7 +18,6 @@ import io.github.jbellis.jvector.vector.VectorSimilarityFunction;
 import jvector.DataSetJVector;
 import jvector.MMapReader;
 import org.apache.commons.io.FileUtils;
-import oshi.SystemInfo;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -32,7 +28,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -40,6 +35,7 @@ import java.util.stream.IntStream;
 public class JVectorIndex {
   private static final String GRAPH_FILE = "graph.bin";
   private static final String COMPRESSED_VECTOR_FILE_FORMAT = "compressed-vectors-%s.bin";
+  public static final String JVECTOR_PREFIX = "JVECTOR-";
 
   public record BuildParameters(int M, int beamWidth, float neighborOverflow, float alpha) {}
 
@@ -57,7 +53,8 @@ public class JVectorIndex {
         Path indexesPath,
         RandomAccessVectorValues vectors,
         VectorSimilarityFunction vectorSimilarityFunction,
-        Parameters parameters)
+        Parameters parameters,
+        int numThreads)
         throws IOException {
 
       var buildParams =
@@ -71,12 +68,6 @@ public class JVectorIndex {
               buildParams.beamWidth,
               buildParams.neighborOverflow,
               buildParams.alpha);
-
-      var numThreads =
-          Optional.ofNullable(System.getenv("JVECTOR_NUM_THREADS"))
-              .map(Integer::parseInt)
-              .orElseGet(
-                  () -> new SystemInfo().getHardware().getProcessor().getPhysicalProcessorCount());
 
       var path = indexesPath.resolve(buildDescription(buildParams));
       Files.createDirectories(path);
@@ -122,8 +113,8 @@ public class JVectorIndex {
 
       return new BuildSummary(
           List.of(
-              new BuildPhase("build", Duration.between(buildStart, buildEnd)),
-              new BuildPhase("commit", Duration.between(commitStart, commitEnd))));
+              new BuildPhase(Phase.build, Duration.between(buildStart, buildEnd)),
+              new BuildPhase(Phase.commit, Duration.between(commitStart, commitEnd))));
     }
 
     @Override
@@ -141,8 +132,9 @@ public class JVectorIndex {
 
     private static String buildDescription(BuildParameters buildParams) {
       return String.format(
-          "jvector|M:%s-beamWidth:%s-neighborOverflow:%s-alpha:%s",
-          buildParams.M, buildParams.beamWidth, buildParams.neighborOverflow, buildParams.alpha);
+              "%sM:%s-beamWidth:%s-neighborOverflow:%s-alpha:%s",
+              JVECTOR_PREFIX,
+              buildParams.M, buildParams.beamWidth, buildParams.neighborOverflow, buildParams.alpha);
     }
   }
 
@@ -173,7 +165,6 @@ public class JVectorIndex {
             DataSetJVector queryVectors, 
             Path indexesPath,
             VectorSimilarityFunction similarityFunction,
-            int dimensions,
             Parameters parameters)
         throws IOException {
 
@@ -199,9 +190,8 @@ public class JVectorIndex {
       
       // TODO ... check this rows
       var cachingGraph = new CachingGraphIndex(onDiskGraph);
-// OnDiskGraphIndex(size=1183514, entryPoint=684218, features=INLINE_VECTORS)
       return new JVectorIndex.Querier(
-              queryVectors,
+          queryVectors,
           readerSupplier,
           cachingGraph,
           vectorSimilarityFunction,
@@ -289,10 +279,7 @@ searcher.search(ssp, queryParams.numCandidates, queryParams.numCandidates, 0.4F,
 //      System.out.println("Querier.query");
       
       return Arrays.stream(results.getNodes())
-          .map(nodeScore -> {
-//            System.out.println("nodeScore = " + nodeScore);
-            return nodeScore.node;
-          })
+          .map(nodeScore -> nodeScore.node)
           .limit(k)
           .collect(Collectors.toList());
     }
@@ -306,7 +293,7 @@ searcher.search(ssp, queryParams.numCandidates, queryParams.numCandidates, 0.4F,
     @Override
     public String description() {
       return String.format(
-          "jvector|M:%s-beamWidth:%s-neighborOverflow:%s-alpha:%s_numCandidates:%s",
+              JVECTOR_PREFIX + "M:%s-beamWidth:%s-neighborOverflow:%s-alpha:%s_numCandidates:%s",
           buildParams.M,
           buildParams.beamWidth,
           buildParams.neighborOverflow,

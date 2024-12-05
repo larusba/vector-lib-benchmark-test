@@ -2,13 +2,10 @@ dataset: glove-100-angular
 provider: lucene
 runtime:
   jfr: true
-  testOnTrain: false
 build:
-  maxConn: 14
-  beamWidth: 1
-  scalarQuantization: false
-  numThreads: 5
-  forceMerge: 0
+  maxConn: 16
+  beamWidth: 50
+  forceMerge: 3
 query:
-  numCandidates: 1
+  numCandidates: 19
 k: 10

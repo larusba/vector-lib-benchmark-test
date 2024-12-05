@@ -22,48 +22,27 @@ import static util.TestUtil.*;
 class JVectorTest {
 
     public static final String YML_CONF_PATTERN = Optional.ofNullable(System.getenv("J_VECTOR_YAML_LIST"))
-            .orElse("test-jvector-glove-1.yml");
+            .orElse("test-jvector-glove-3.yml");
     public static final Set<Config.BuildSpec> BUILD_SPEC_LOAD = new HashSet<>();
     public static final Set<Config.QuerySpec> QUERY_SPEC_LOAD = new HashSet<>();
 
     @BeforeAll
     public static void setUp() throws IOException {
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Path.of("conf/"), YML_CONF_PATTERN)) {
-            for (Path yml: stream) {
-                try {
-                    BUILD_SPEC_LOAD.add(Config.BuildSpec.load(yml.getFileName().toString()));
-                    QUERY_SPEC_LOAD.add(Config.QuerySpec.load(yml.getFileName().toString()));
-                } catch (Exception e){
-                    System.out.println(STR."unexpected exception during the \{yml} config load...");
-                    System.out.println(e.getMessage());
-                }
-            }
-        }
+        loadConfigs(BUILD_SPEC_LOAD, QUERY_SPEC_LOAD, YML_CONF_PATTERN);
     }
-    
+
     @Test
     @Order(1)
     void testJVectorBuild() {
-        QUERY_SPEC_LOAD.stream()
-                .map(spec -> STR."\{spec.provider()}-\{spec.dataset()}")
-                .forEach(StatsUtil::initBuildStatsCsv);
-
         BUILD_SPEC_LOAD.forEach(
                 load -> Assertions.assertDoesNotThrow(
-                        () -> {
-                            System.out.println(STR."loading \{load.dataset()} dataset...");
-                            BuildBench.build(load, datasetPath, indexesPath, reportsPath);
-                        }
+                        () -> BuildBench.build(load, datasetPath, indexesPath, reportsPath)
                 )
         );
     }
 
     @Test
     void testJVectorQuery() {
-        QUERY_SPEC_LOAD.stream()
-                .map(spec -> STR."\{spec.provider()}-\{spec.dataset()}")
-                .forEach(StatsUtil::initQueryStatsCsv);
-
         QUERY_SPEC_LOAD.forEach(
                 load -> Assertions.assertDoesNotThrow(
                         () -> QueryBench.test(load, datasetPath, indexesPath, reportsPath)

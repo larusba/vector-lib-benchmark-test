@@ -108,10 +108,10 @@ runtime:
 build:
   beamWidth: 10
   M: 1
-  neighborOverflow: 0.61
-  alpha: 0.8
+  neighborOverflow: 1.61
+  alpha: 1.8
 query:
-  numCandidates: 3
+  numCandidates: 23
 k: 10
 ```
 
@@ -145,17 +145,6 @@ Controls the number of paths considered during the search. This parameter dictat
 - **High `beamWidth`**: Provides a more exhaustive search, improving accuracy at the cost of higher computational demands.
 - **Low `beamWidth`**: Reduces memory and computation needs, though it may decrease retrieval accuracy.
 
-#### `scalarQuantization`
-An optional optimization for reducing memory consumption by quantizing (compressing) vector data. This approach maps floating-point vector components to integer values.
-
-- **Pros**: Saves memory by reducing vector precision.
-- **Cons**: May slightly impact retrieval accuracy based on the level of quantization applied.
-
-#### `numThreads`
-Determines the number of threads used for indexing and searching, allowing for parallel processing.
-
-- **High `numThreads`**: Leverages multi-threading for faster indexing and querying on multi-core systems. However, setting this value too high can result in diminishing returns or slowdowns from context switching overhead.
-
 #### `forceMerge`
 Enables Lucene’s force merge process, which reduces the number of index segments by merging them into fewer or a single segment.
 
@@ -188,7 +177,7 @@ build:
   numThreads: 5
   forceMerge: 0
 query:
-  numCandidates: 3
+  numCandidates: 23
 k: 10
 ```
 

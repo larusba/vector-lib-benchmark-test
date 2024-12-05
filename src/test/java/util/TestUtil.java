@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -12,6 +13,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -75,34 +77,19 @@ public class TestUtil {
             throw new RuntimeException(e);
         }
     }
-
-    public static void printMBValues(String opearation) {
-        Map<String, Object> reads = readStats(opearation);
-        System.out.println("Operation: " + opearation);
-        reads.forEach( (key, value) -> System.out.println(key + ": " + (long) value / 1024L + "MB"));
-    }
-
-    public static void printValues(String opearation) {
-        Map<String, Object> reads = readStats(opearation);
-        System.out.println("Operation: " + opearation);
-        reads.forEach( (key, value) -> System.out.println(key + ": " + value));
-    }
-
-    public static void mkDirIfNotExists(String dirName) {
-        try {
-            File directory = new File(dirName);
-            if (!directory.exists()) {
-                Files.createDirectories(Paths.get(dirName));
+    
+    public static void loadConfigs(Set<Config.BuildSpec> BUILD_SPEC_LOAD, Set<Config.QuerySpec> QUERY_SPEC_LOAD, String YML_CONF_PATTERN) throws IOException {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Path.of("conf/"), YML_CONF_PATTERN)) {
+            for (Path yml: stream) {
+                try {
+                    BUILD_SPEC_LOAD.add(Config.BuildSpec.load(yml.getFileName().toString()));
+                    QUERY_SPEC_LOAD.add(Config.QuerySpec.load(yml.getFileName().toString()));
+                } catch (Exception e){
+                    System.out.println(STR."unexpected exception during the \{yml} config load...");
+                    System.out.println(e.getMessage());
+                }
             }
-        } catch (IOException e) {
-            throw new RuntimeException(String.format("Errore creazione cartella %s", dirName));
         }
-    }
-
-    public static String convertToCSV(String[] data) {
-        return Stream.of(data)
-                .map(TestUtil::escapeSpecialCharacters)
-                .collect(Collectors.joining(","));
     }
 
     public static void deleteFile(String filename) {
