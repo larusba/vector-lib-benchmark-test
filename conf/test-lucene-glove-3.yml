@@ -1,11 +1,11 @@
-dataset: sift-128-euclidean
+dataset: glove-100-angular
 provider: lucene
 runtime:
   jfr: true
 build:
   maxConn: 14
-  beamWidth: 5
+  beamWidth: 10
   forceMerge: 0
 query:
-  numCandidates: 19
-k: 10
+  numCandidates: 13
+k: 50

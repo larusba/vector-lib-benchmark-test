@@ -8,6 +8,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class Config {
@@ -84,11 +85,15 @@ public class Config {
     }
 
     public String runtimeString() {
-      return runtime.entrySet().stream()
-              .sorted(Map.Entry.comparingByKey())
-              .map(entry -> String.format("%s:%s", entry.getKey(), entry.getValue()))
-              .collect(Collectors.joining("-"));
+        return runtime.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> String.format("%s:%s", entry.getKey(), entry.getValue()))
+                .collect(Collectors.joining("-"));
+      }
     }
+
+  public static int getQueryThreads(Map<String, String> runtime) {
+    return Optional.ofNullable(runtime.get("queryThreads")).map(Integer::parseInt).orElse(5);
   }
 
 }

@@ -3,6 +3,8 @@ package index;
 import com.google.common.base.Preconditions;
 import org.apache.lucene.codecs.lucene90.Lucene90Codec;
 import org.apache.lucene.codecs.lucene90.Lucene90HnswVectorsFormat;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.KnnVectorQuery;
 import util.Exceptions;
 import util.ProgressBar;
 import util.Records;
@@ -15,13 +17,10 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.index.VectorSimilarityFunction;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
-import lucene.LuceneUtil;
 import lucene.CustomVectorProvider;
 import util.DataSetVector;
 
@@ -32,20 +31,19 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.IntStream;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
 public final class LuceneIndex {
-  
+
+  public static final String LUCENE_PREFIX = "LUCENE-";
+
   public record HnswBuildParameters(
-      int maxConn, int beamWidth, boolean scalarQuantization, int numThreads, int forceMerge) {}
+      int maxConn, int beamWidth, int forceMerge) {}
 
   public record HnswQueryParameters(int numCandidates) {}
 
-  private static final String VECTOR_FIELD = "field";
+  private static final String VECTOR_FIELD = "vector";
   private static final String ID_FIELD = "id";
 
   public static final class Builder implements Index.Builder {
@@ -55,11 +53,14 @@ public final class LuceneIndex {
     private final IndexWriter writer;
     private final HnswBuildParameters hnswParams;
     private final VectorSimilarityFunction similarityFunction;
+    private final int numThreads;
 
-    public Builder(Path indexesPath,
+    public Builder(
+            Path indexesPath,
             CustomVectorProvider vectors,
-        DataSetVector.SimilarityFunction similarityFunction,
-        Parameters parameters)
+            DataSetVector.SimilarityFunction similarityFunction,
+            Parameters parameters,
+            int numThreads)
         throws IOException {
 
       var hnswParams = parseBuildPrams(parameters.buildParameters());
@@ -104,13 +105,13 @@ public final class LuceneIndex {
       this.writer = writer;
       this.similarityFunction = similarity;
       this.hnswParams = hnswParams;
+      this.numThreads = numThreads;
     }
 
     @Override
     public BuildSummary build() throws IOException {
       System.out.println("vectors size = " + vectors.size());
       var size = this.vectors.size();
-      var numThreads = hnswParams.numThreads;
       
       var buildStart = Instant.now();
       
@@ -139,17 +140,24 @@ public final class LuceneIndex {
                   })).join();
         }
       }
+
+      System.out.println("build end");
       var buildEnd = Instant.now();
 
       ArrayList<BuildPhase> build = new ArrayList<>();
-      build.add( new BuildPhase("build", Duration.between(buildStart, buildEnd)) );
+      build.add( new BuildPhase(Phase.build, Duration.between(buildStart, buildEnd)) );
       
       if (hnswParams.forceMerge != 0) {
         var mergeStart = Instant.now();
         this.writer.forceMerge(1);
         var mergeEnd = Instant.now();
-        build.add(new BuildPhase("merge", Duration.between(mergeStart, mergeEnd)));
+        build.add(new BuildPhase(Phase.merge, Duration.between(mergeStart, mergeEnd)));
       }
+
+      var commitStart = Instant.now();
+      writer.commit();
+      var commitEnd = Instant.now();
+      build.add(new BuildPhase(Phase.commit, Duration.between(commitStart, commitEnd)));
       
       return new BuildSummary(build);
     }
@@ -170,17 +178,16 @@ public final class LuceneIndex {
     }
 
     private static String buildDescription(HnswBuildParameters params) {
-      return String.format("lucene_hnsw_%s", buildParamString(params));
+      return buildParamString(params);
     }
 
     private static String buildParamString(HnswBuildParameters params) {
       return String.format(
-            "maxConn:%s-beamWidth:%s-scalarQuantization:%s-numThreads:%s-forceMerge:%s",
-            params.maxConn,
-            params.beamWidth,
-            params.scalarQuantization,
-            params.numThreads,
-            params.forceMerge);
+              "%smaxConn:%s-beamWidth:%s-forceMerge:%s",
+              LUCENE_PREFIX,
+              params.maxConn,
+              params.beamWidth,
+              params.forceMerge);
     }
   }
 
@@ -190,16 +197,19 @@ public final class LuceneIndex {
     private final IndexReader reader;
     private final HnswBuildParameters buildParams;
     private final HnswQueryParameters queryParams;
+    private final IndexSearcher searcher;
 
     private Querier(
         Directory directory,
         IndexReader reader,
         HnswBuildParameters buildParams,
-        HnswQueryParameters queryParams) {
+        HnswQueryParameters queryParams,
+        IndexSearcher searcher) {
       this.directory = directory;
       this.reader = reader;
       this.buildParams = buildParams;
       this.queryParams = queryParams;
+      this.searcher = searcher;
     }
 
     public static Index.Querier create(Path indexesPath, Parameters parameters) throws IOException {
@@ -213,8 +223,10 @@ public final class LuceneIndex {
 
       var directory = new MMapDirectory(indexesPath.resolve(buildDescription));
       var reader = DirectoryReader.open(directory);
+
+      var searcher = new IndexSearcher(reader);
       return new LuceneIndex.Querier(
-          directory, reader, buildParams, queryParams);
+          directory, reader, buildParams, queryParams, searcher);
     }
 
     @Override
@@ -222,23 +234,30 @@ public final class LuceneIndex {
       float[] vector = (float[]) vectorObj;
 
       var ids = new ArrayList<Integer>(k);
-      for (LeafReaderContext ctx : reader.leaves()) {
-        TopDocs results = LuceneUtil.doKnnSearch(ctx.reader(), "field", vector, k, 1);
 
-        for (int i = 0; i < k; i++) {
+      var query = new KnnVectorQuery(VECTOR_FIELD, vector, queryParams.numCandidates);
+      var results = this.searcher.search(query, queryParams.numCandidates);
+
+        for (int i = 0; i < k && i < results.scoreDocs.length; i++) {
           var result = results.scoreDocs[i];
-          var id = result.doc;
+          var id =
+                  ensureIds
+                      ? this.searcher
+                          .doc(result.doc)
+                          .getField(ID_FIELD)
+                          .numericValue()
+                          .intValue()
+                      : result.doc;
           ids.add(id);
         }
-      }
 
-      return ids.stream().limit(k).toList();
+      return ids;
     }
 
     @Override
     public String description() {
       return String.format(
-          "lucene_%s_%s",
+          "%s_%s",
           LuceneIndex.Builder.buildParamString(buildParams),
           queryParamString()
       );

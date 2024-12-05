@@ -4,9 +4,9 @@ runtime:
   jfr: true
 build:
   beamWidth: 5
-  M: 1
-  neighborOverflow: 0.1
-  alpha: 0.2
+  M: 14
+  neighborOverflow: 1.1
+  alpha: 1.2
 query:
-  numCandidates: 1
+  numCandidates: 21
 k: 10

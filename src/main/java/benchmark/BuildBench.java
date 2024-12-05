@@ -15,12 +15,16 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
+import static util.FileUtils.mkDirIfNotExists;
+
 public class BuildBench {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(BuildBench.class);
-
+    
     public static void build(Config.BuildSpec spec, Path datasetPath, Path indexesPath, Path reportsPath)
             throws Exception {
+        mkDirIfNotExists(reportsPath.toFile().getName());
+        
+        StatsUtil.initBuildStatsCsv(STR."\{spec.provider()}-\{spec.dataset()}");
+        
         var dataset = DataSetVector.load(spec.provider(), datasetPath, spec.dataset());
         var jfr =
                 Optional.ofNullable(spec.runtime().get("jfr")).map(Boolean::parseBoolean).orElse(false);
@@ -47,23 +51,16 @@ public class BuildBench {
         }
 
         try (
-                var index = Index.Builder.fromParameters(dataset, indexesPath, spec.provider(), spec.build())
+                var index = Index.Builder.fromParameters(dataset, indexesPath, spec)
         ) {
             var summary = index.build();
-            var totalTime =
-                    summary.phases().stream().map(BuildPhase::duration).reduce(Duration.ZERO, Duration::plus);
 
+            String description = StatsUtil.getCsvDescription(index.description());
             StatsUtil.appendToBuildCsv(
                     STR."\{spec.provider()}-\{spec.dataset()}",
-                    index.description(), summary,
+                    description, summary,
                     String.valueOf(index.size())
             );
-            System.out.println("completed building index for " + index.description());
-            summary
-                    .phases()
-                    .forEach(phase -> System.out.println("\t{} phase: {}" + phase.description() + phase.duration()));
-            System.out.println("\ttotal time seconds and nanos: {}" + totalTime.getSeconds() + " - " + totalTime.getNano());
-            System.out.println("\tsize: {}" + index.size());
 
         } catch (IllegalArgumentException iare) {
             System.out.println(iare.getMessage());
